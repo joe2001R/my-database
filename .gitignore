@@ -2,3 +2,4 @@
 Gemfile*
 *.db
 .vscode*
+db

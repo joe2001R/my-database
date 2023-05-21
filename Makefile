@@ -15,10 +15,13 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 LIBS = -lc
 
-$(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
-	$(CC) $(INC) -c -o $@ $< $(CFLAGS)
-
 all: db test
+
+$(ODIR):
+	mkdir $(ODIR)
+
+$(ODIR)/%.o: $(SDIR)/%.c $(DEPS) $(ODIR)
+	$(CC) $(INC) -c -o $@ $< $(CFLAGS)
 
 db: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
