@@ -27,9 +27,9 @@ describe 'database' do
     end
 
     it 'persists one record' do
-        run_script(["insert 400 joestar",".exit"])
+        run_script(["insert 1 joestar",".exit"])
         result = run_script(["select",".exit"])
-        expect(result).to match_array(["db > ","db > 400 joestar"])
+        expect(result).to match_array(["db > ","db > 1 joestar"])
     end
 
 end

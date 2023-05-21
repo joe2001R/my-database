@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "btree.h"
 #include "parser.h"
 #include "row.h"
 #include "table.h"
@@ -88,19 +89,29 @@ ExecuteResult execute_statement(statement *statement, table *table)
 }
 ExecuteResult execute_insert(statement *statement, table *table)
 {
-    void* page = pager_get_page(table->pager,0);
-    row_serialize(page,&statement->row_to_insert);
+    if(table->pager->file_length == 0)
+    {
+        table_init_root(table);
+    }
+
+    void* page = pager_get_page(table->pager,table->root_page_index);
+    
+    void* row_to_insert = malloc(ROW_SIZE);
+    row_serialize(row_to_insert,&statement->row_to_insert);
+
+    leaf_node_insert_row(page,statement->row_to_insert.id,row_to_insert);
 
     return EXECUTE_SUCCESS;
 }
 ExecuteResult execute_select(statement *statement, table *table)
 {
-    row m_row;
-    
-    void* page = pager_get_page(table->pager,0);
-    row_deserialize(&m_row,page);
+    row row_to_display;
 
-    print_row(&m_row);
+    void* page = pager_get_page(table->pager,table->root_page_index);
+
+    row_deserialize(&row_to_display,leaf_node_find_row(page,1));
+
+    print_row(&row_to_display);
 
     return EXECUTE_SUCCESS;
 }

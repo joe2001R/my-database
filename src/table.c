@@ -1,3 +1,4 @@
+#include "btree.h"
 #include "table.h"
 #include "pager.h"
 
@@ -26,4 +27,13 @@ void table_db_close(table* table)
 
     free(table->pager);
     free(table);
+}
+
+void table_init_root(table *table)
+{
+    table->root_page_index = 0;
+
+    void* root = pager_get_page(table->pager,table->root_page_index);
+
+    leaf_node_root_init(root);
 }
