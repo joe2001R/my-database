@@ -10,7 +10,7 @@
 
 typedef struct _table
 {
-    pager* pager;
+    pager* pager; 
 } table;
 
 table* table_db_open(const char* filename);
