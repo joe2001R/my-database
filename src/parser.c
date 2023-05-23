@@ -51,6 +51,18 @@ PrepareResult prepare_statement(input_buffer *buffer, statement *statement)
 PrepareResult prepare_select(input_buffer *buffer, statement *statement)
 {
     statement->statement_type = SELECT_STATEMENT;
+    id_vector_init(&statement->selected_ids);
+
+    strtok(buffer->string," "); // keyword
+    char* id = strtok(NULL," ");
+
+    while(id)
+    {
+        id_vector_push_back(&statement->selected_ids,atoi(id));
+
+        id = strtok(NULL," ");
+    }
+
     return PREPARE_SUCCESS;
 }
 
@@ -87,9 +99,23 @@ ExecuteResult execute_statement(statement *statement, table *table)
     fprintf(stderr,"executing invalid statement");
     exit(EXIT_FAILURE);
 }
+
+static bool pager_is_empty(pager* this)
+{
+    for(int i = 0; i < MAX_PAGE_NO;i++)
+    {
+        if(this->pages[i]!=NULL)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 ExecuteResult execute_insert(statement *statement, table *table)
 {
-    if(table->pager->file_length == 0)
+    if (table->pager->file_length == 0 && pager_is_empty(table->pager))
     {
         table_init_root(table);
     }
@@ -107,13 +133,19 @@ ExecuteResult execute_insert(statement *statement, table *table)
 }
 ExecuteResult execute_select(statement *statement, table *table)
 {
-    row row_to_display;
 
     void* page = pager_get_page(table->pager,table->root_page_index);
 
-    row_deserialize(&row_to_display,leaf_node_find_row(page,1));
+    for(int i = 0; i < statement->selected_ids.size;i++)
+    {
+        row row_to_display;
 
-    print_row(&row_to_display);
+        row_deserialize(&row_to_display, leaf_node_find_row(page, id_vector_read(&statement->selected_ids,i)));
+
+        print_row(&row_to_display);
+    }
+
+    id_vector_destroy(&statement->selected_ids);
 
     return EXECUTE_SUCCESS;
 }

@@ -42,15 +42,10 @@ static uint32_t leaf_node_lower_bound(void* node,uint32_t key)
 {
     uint32_t num_records = *leaf_node_get_num_records(node);
 
-    if(num_records == 0)
-    {
-        return 0;
-    }
-
-    uint32_t upper = num_records - 1;
+    uint32_t upper = num_records;
     uint32_t lower = 0;
 
-    while(upper != lower)
+    while(upper > lower)
     {
         uint32_t mid = (upper + lower) / 2;
         uint32_t key_at_mid = *leaf_node_get_key(node,mid);

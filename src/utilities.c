@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include<string.h>
 #include <sys/types.h>
 
 #include "utilities.h"
@@ -40,4 +41,38 @@ void read_input(input_buffer *buffer)
 
     buffer->buffer_size = bytes_read - 1;
     buffer->string[bytes_read - 1] = '\0';
+}
+
+void id_vector_init(id_vector *this)
+{
+    this->array = malloc(sizeof(uint32_t));
+    this->capacity = 1;
+    this->size = 0;
+}
+
+void id_vector_push_back(id_vector *this, uint32_t id)
+{
+    if(this->capacity == this->size)
+    {
+        uint32_t* new_array = malloc(this->capacity * sizeof(uint32_t) * 2);
+        memcpy(new_array,this->array,this->capacity * sizeof(uint32_t));
+        free(this->array);
+        
+        this->array = new_array;
+    }
+
+    *(this->array + this->size)=id;
+    this->size++;
+}
+
+uint32_t id_vector_read(id_vector *this, uint32_t at)
+{
+    ensure(at < this->size,"error: invalid id_vector_read : size = %d , at = %d\n",this->size,at);
+
+    return this->array[at];
+}
+
+void id_vector_destroy(id_vector *this)
+{
+    free(this->array);
 }

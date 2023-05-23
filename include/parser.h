@@ -31,6 +31,7 @@ typedef struct _statement
 {
     StatementType statement_type;
     row row_to_insert;
+    id_vector selected_ids;
 } statement; 
 
 void print_prompt();
