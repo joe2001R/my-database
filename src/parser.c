@@ -100,6 +100,8 @@ ExecuteResult execute_insert(statement *statement, table *table)
     row_serialize(row_to_insert,&statement->row_to_insert);
 
     leaf_node_insert_row(page,statement->row_to_insert.id,row_to_insert);
+    
+    free(row_to_insert);
 
     return EXECUTE_SUCCESS;
 }
