@@ -58,10 +58,6 @@ static uint32_t leaf_node_lower_bound(void* node,uint32_t key)
         if(key_at_mid >= key)
         {
             upper = mid;
-            if(lower == upper)
-            {
-                return lower;
-            }
         }
         else
         {
