@@ -20,12 +20,12 @@ void print_prompt()
     printf("db > ");
 }
 
-bool is_meta_command(input_buffer* buffer)
+bool is_meta_command(string_buffer* buffer)
 {
     return buffer->buffer_size!=0 && buffer->string[0]=='.';
 }
 
-void do_meta_command(input_buffer *buffer, table *table)
+void do_meta_command(string_buffer *buffer, table *table)
 {
     if (strcmp(buffer->string, ".exit") == 0)
     {
@@ -34,11 +34,13 @@ void do_meta_command(input_buffer *buffer, table *table)
     }
     else if(strcmp(buffer->string,".diagnostic") == 0)
     {
-        btree_print_diagnostics();
+        string_buffer buffer = btree_get_diagnostics();
+        printf(buffer.string);
+        string_buffer_destroy(&buffer);
     }
 }
 
-PrepareResult prepare_statement(input_buffer *buffer, statement *statement)
+PrepareResult prepare_statement(string_buffer *buffer, statement *statement)
 {
     if(strncmp(buffer->string,"insert",6) == 0)
     {
@@ -52,7 +54,7 @@ PrepareResult prepare_statement(input_buffer *buffer, statement *statement)
     return PREPARE_UNRECOGNIZED;
 }
 
-PrepareResult prepare_select(input_buffer *buffer, statement *statement)
+PrepareResult prepare_select(string_buffer *buffer, statement *statement)
 {
     statement->statement_type = SELECT_STATEMENT;
     id_vector_init(&statement->selected_ids);
@@ -70,7 +72,7 @@ PrepareResult prepare_select(input_buffer *buffer, statement *statement)
     return PREPARE_SUCCESS;
 }
 
-PrepareResult prepare_insert(input_buffer *buffer, statement *statement)
+PrepareResult prepare_insert(string_buffer *buffer, statement *statement)
 {
     statement->statement_type = INSERT_STATEMENT;
     
@@ -78,9 +80,14 @@ PrepareResult prepare_insert(input_buffer *buffer, statement *statement)
     char* id = strtok(NULL," ");
     char* name = strtok(NULL," ");
     
-    if(id == NULL || name == NULL || strlen(name)> NAME_MAX_LENGTH || atoi(id)<0) 
+    if(id == NULL || name == NULL || atoi(id)<0) 
     {
-        return PREPARE_FAILURE;
+        return PREPARE_INSERT_INVALID_ARGS;
+    }
+    
+    if( strlen(name)> NAME_MAX_LENGTH )
+    {
+        return PREPARE_INSERT_STRING_TOO_BIG;
     }
 
     statement->row_to_insert.id = atoi(id);
@@ -126,7 +133,7 @@ ExecuteResult execute_insert(statement *statement, table *table)
 
     void* page = pager_get_page(table->pager,table->root_page_index);
     
-    void* row_to_insert = malloc(ROW_SIZE);
+    void* row_to_insert = Malloc(ROW_SIZE);
     row_serialize(row_to_insert,&statement->row_to_insert);
 
     leaf_node_insert_row(page,statement->row_to_insert.id,row_to_insert);

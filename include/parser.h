@@ -11,7 +11,9 @@ typedef enum
 {
     PREPARE_SUCCESS,
     PREPARE_FAILURE,
-    PREPARE_UNRECOGNIZED
+    PREPARE_UNRECOGNIZED,
+    PREPARE_INSERT_INVALID_ARGS,
+    PREPARE_INSERT_STRING_TOO_BIG
 
 } PrepareResult;
 
@@ -36,12 +38,12 @@ typedef struct _statement
 
 void print_prompt();
 
-bool is_meta_command(input_buffer* buffer);
-void do_meta_command(input_buffer* buffer,table* table);
+bool is_meta_command(string_buffer* buffer);
+void do_meta_command(string_buffer* buffer,table* table);
 
-PrepareResult prepare_statement(input_buffer* buffer, statement* statement);
-PrepareResult prepare_select(input_buffer* buffer, statement* statement);
-PrepareResult prepare_insert(input_buffer* buffer, statement* statement);
+PrepareResult prepare_statement(string_buffer* buffer, statement* statement);
+PrepareResult prepare_select(string_buffer* buffer, statement* statement);
+PrepareResult prepare_insert(string_buffer* buffer, statement* statement);
 
 ExecuteResult execute_statement(statement* statement,table* table);
 ExecuteResult execute_insert(statement *statement, table *table);

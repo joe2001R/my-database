@@ -22,7 +22,7 @@ pager* pager_open(const char *filename)
     int fd = open(filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
     ensure(fd != -1, "unable %s to open file in `pager_open`\n",filename);
 
-    pager *return_value = malloc(sizeof(pager));
+    pager *return_value = Malloc(sizeof(pager));
     
     off_t file_length = lseek(fd,0,SEEK_END);
 
@@ -44,7 +44,7 @@ void *pager_get_page(pager *pager, uint32_t id)
     if(pager->pages[id] == NULL)
     {
         uint32_t file_num_pages = pager->file_length / PAGE_SIZE;
-        pager->pages[id] = malloc(PAGE_SIZE);
+        pager->pages[id] = Malloc(PAGE_SIZE);
 
         if( id < file_num_pages)
         {

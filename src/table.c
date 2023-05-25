@@ -9,7 +9,7 @@ table *table_db_open(const char *filename)
 {
     pager* new_pager = pager_open(filename);
 
-    table* return_value = malloc(sizeof(table));
+    table* return_value = Malloc(sizeof(table));
     return_value->pager = new_pager;
 
     return return_value;

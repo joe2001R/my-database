@@ -65,15 +65,24 @@ static uint32_t leaf_node_lower_bound(void* node,uint32_t key)
 
 /*** ------------------------------------------------------------- ***/
 
-void btree_print_diagnostics()
+string_buffer btree_get_diagnostics()
 {
-    printf("common header size is : %ld\n", COMMON_HEADER_SIZE);
-    printf("leaf node header size is : %ld\n", LEAF_NODE_HEADER_SIZE);
-    printf("leaf node body size is : %ld\n", LEAF_NODE_BODY_SIZE);
-    printf("leaf node record size is : %ld\n", LEAF_NODE_RECORD_SIZE);
-    printf("\tleaf node key size is : %ld\n", LEAF_NODE_KEY_SIZE);
-    printf("\tleaf node row size is : %ld\n", ROW_SIZE);
-    printf("leaf node body max number of record is : %ld\n", LEAF_NODE_MAX_NUM_RECORDS);
+    string_buffer buf;
+    
+    char char_arr[256];
+    char* str = char_arr;
+    str = str + sprintf(str,"common header size is : %ld\n", COMMON_HEADER_SIZE);
+    str = str + sprintf(str,"leaf node header size is : %ld\n", LEAF_NODE_HEADER_SIZE);
+    str = str + sprintf(str,"leaf node body size is : %ld\n", LEAF_NODE_BODY_SIZE);
+    str = str + sprintf(str,"leaf node record size is : %ld\n", LEAF_NODE_RECORD_SIZE);
+    str = str + sprintf(str,"\tleaf node key size is : %ld\n", LEAF_NODE_KEY_SIZE);
+    str = str + sprintf(str,"\tleaf node row size is : %ld\n", ROW_SIZE);
+    str = str + sprintf(str,"leaf node body max number of record is : %ld\n", LEAF_NODE_MAX_NUM_RECORDS);
+
+    string_buffer_init(&buf);
+    string_buffer_store(&buf,char_arr);
+
+    return buf;
 }
 
 uint32_t *leaf_node_get_num_records(void *node)

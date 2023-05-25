@@ -14,9 +14,9 @@ int main(int argc, char** argv)
 
     while(1)
     {
-        input_buffer buffer;
+        string_buffer buffer;
         print_prompt();
-        read_input(&buffer);
+        string_buffer_read(&buffer);
         
         if(is_meta_command(&buffer))
         {
@@ -25,12 +25,13 @@ int main(int argc, char** argv)
         else
         {
             statement m_statement;
+            PrepareResult m_prepare_result = prepare_statement(&buffer, &m_statement);
 
-            ensure(prepare_statement(&buffer, &m_statement) == PREPARE_SUCCESS, "could not prepare statement successfully\n");
+            ensure(m_prepare_result == PREPARE_SUCCESS, "could not prepare statement successfully: error - %d\n",m_prepare_result);
             ensure(execute_statement(&m_statement, m_table) == EXECUTE_SUCCESS, "could not execute statement\n");
         }
 
-        input_buffer_destroy(&buffer);
+        string_buffer_destroy(&buffer);
     }
 
     return 0;
