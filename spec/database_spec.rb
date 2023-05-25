@@ -1,6 +1,10 @@
 describe 'database' do
     before do
-        `rm -rf test.db`
+        `rm -f test.db`
+    end
+    
+    after do
+        `rm -f test.db`
     end
 
     def run_script(commands)
