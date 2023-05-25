@@ -56,6 +56,8 @@ NodeType *node_get_type(void* node);
 static_assert(LEAF_NODE_BODY_SIZE > 0,"leaf body's size is less than or equal to 0");
 static_assert(LEAF_NODE_MAX_NUM_RECORDS > 0, "leaf's node maximum number of records is less than or equal to 0");
 
+void btree_print_diagnostics();
+
 uint32_t* leaf_node_get_num_records(void* node);
 uint32_t* leaf_node_get_right_child(void* node);
 

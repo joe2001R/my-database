@@ -32,6 +32,10 @@ void do_meta_command(input_buffer *buffer, table *table)
         table_db_close(table);
         exit(EXIT_SUCCESS);
     }
+    else if(strcmp(buffer->string,".diagnostic") == 0)
+    {
+        btree_print_diagnostics();
+    }
 }
 
 PrepareResult prepare_statement(input_buffer *buffer, statement *statement)
