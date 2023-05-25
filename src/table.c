@@ -17,8 +17,13 @@ table *table_db_open(const char *filename)
 
 void table_db_close(table* table)
 {
-    for(int i = 0; i < table->pager->num_pages;i++)
+    for(int i = 0; i < MAX_PAGE_NO;i++)
     {
+        if(table->pager->pages[i]==NULL)
+        {
+            continue;
+        }
+
         pager_flush(table->pager,i);
         free(table->pager->pages[i]);
     }

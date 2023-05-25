@@ -33,9 +33,9 @@ describe 'database' do
     end
 
     it 'persists many records' do
-        run_script(["insert 1 joestar","insert 2 jotaro","insert 3 joe",".exit"])
-        result = run_script(["select 1 2 3",".exit"])
-        expect(result).to match_array(["db > ","db > 1 joestar","2 jotaro","3 joe"])
+        run_script(["insert 100 joestar","insert 200 jotaro","insert 3 joe",".exit"])
+        result = run_script(["select 100 200 3",".exit"])
+        expect(result).to match_array(["db > ","db > 100 joestar","200 jotaro","3 joe"])
     end
 
 end
