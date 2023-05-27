@@ -1,6 +1,7 @@
 #ifndef TABLE_H
 #define TABLE_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -26,8 +27,12 @@ void table_db_close(table* table);
 
 void table_init_root(table* table);
 
+cursor* table_db_begin(table* table);
 cursor* table_db_find(table* table,uint32_t id);
 
 void* cursor_read(cursor* cursor);
+
+void cursor_advance(cursor* cursor);
+bool cursor_is_end(cursor* cursor);
 
 #endif

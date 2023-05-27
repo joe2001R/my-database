@@ -15,6 +15,57 @@ static void print_row(const row* m_row)
     printf("%d %s\n",m_row->id,m_row->name);
 }
 
+static ExecuteResult execute_select_all(table *table)
+{
+    cursor* cursor = table_db_begin(table);
+
+    if(cursor == NULL)
+    {
+        return EXECUTE_SUCCESS;
+    }
+
+    while(!cursor_is_end(cursor))
+    {
+        row row_to_display;
+
+        row_deserialize(&row_to_display,cursor_read(cursor));
+        print_row(&row_to_display);
+
+        cursor_advance(cursor);
+    }
+
+    destroy((void**)&cursor);
+
+    return EXECUTE_SUCCESS;
+}
+
+static ExecuteResult execute_select_subset(statement* statement,table* table)
+{
+    for (int i = 0; i < statement->selected_ids.size; i++)
+    {
+        row row_to_display;
+
+        cursor *cursor = table_db_find(table, id_vector_read(&statement->selected_ids, i));
+
+        if (cursor == NULL)
+        {
+            continue;
+        }
+
+        row_deserialize(&row_to_display, cursor_read(cursor));
+
+        destroy((void **)&cursor);
+
+        print_row(&row_to_display);
+    }
+
+    id_vector_destroy(&statement->selected_ids);
+
+    return EXECUTE_SUCCESS;
+}
+
+/*************************************************************************/
+
 void print_prompt()
 {
     printf("db > ");
@@ -57,10 +108,23 @@ PrepareResult prepare_statement(string_buffer *buffer, statement *statement)
 PrepareResult prepare_select(string_buffer *buffer, statement *statement)
 {
     statement->statement_type = SELECT_STATEMENT;
-    id_vector_init(&statement->selected_ids);
 
-    strtok(buffer->string," "); // keyword
-    char* id = strtok(NULL," ");
+    strtok(buffer->string, " "); // keyword
+    char *id = strtok(NULL, " ");
+
+    if(id!=NULL && strcmp(id,"*") == 0)
+    {
+        if (strtok(NULL, " ") != NULL)
+        {
+            return PREPARE_UNRECOGNIZED;
+        }
+
+        statement->select_all = true;
+
+        return PREPARE_SUCCESS;
+    }
+
+    id_vector_init(&statement->selected_ids);
 
     while(id)
     {
@@ -148,25 +212,12 @@ ExecuteResult execute_insert(statement *statement, table *table)
 }
 ExecuteResult execute_select(statement *statement, table *table)
 {
-    for(int i = 0; i < statement->selected_ids.size;i++)
+    if(statement->select_all == false)
     {
-        row row_to_display;
-
-        cursor* cursor = table_db_find(table,id_vector_read(&statement->selected_ids,i));
-        
-        if(cursor == NULL)
-        {
-            return EXECUTE_SELECT_ROW_NOT_FOUND;
-        }
-
-        row_deserialize(&row_to_display, cursor_read(cursor));
-
-        destroy((void**)&cursor);
-
-        print_row(&row_to_display);
+        return execute_select_subset(statement,table);
     }
-
-    id_vector_destroy(&statement->selected_ids);
-
-    return EXECUTE_SUCCESS;
+    else
+    {
+        return execute_select_all(table);
+    }
 }

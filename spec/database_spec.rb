@@ -42,4 +42,11 @@ describe 'database' do
         expect(result).to match_array(["db > ","db > 100 joestar","200 jotaro","3 joe"])
     end
 
+    it 'prints every record in order' do
+        run_script(["insert 100 joestar","insert 200 jotaro","insert 3 joe","insert 4 jojo",".exit"])
+        result = run_script(["select *",".exit"])
+        expect(result).to match_array(["db > ","db > 3 joe","4 jojo" ,"100 joestar","200 jotaro"])
+        
+    end
+
 end

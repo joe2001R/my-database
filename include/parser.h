@@ -20,9 +20,7 @@ typedef enum
 
 typedef enum
 {
-    EXECUTE_SUCCESS,
-    EXECUTE_SELECT_ROW_NOT_FOUND
-
+    EXECUTE_SUCCESS
 } ExecuteResult;
 
 typedef enum
@@ -36,6 +34,7 @@ typedef struct _statement
     StatementType statement_type;
     row row_to_insert;
     id_vector selected_ids;
+    bool select_all;
 } statement; 
 
 void print_prompt();

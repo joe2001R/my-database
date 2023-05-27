@@ -71,3 +71,30 @@ void* cursor_read(cursor *cursor)
 {
     return leaf_node_get_row(cursor->m_leaf_node,cursor->m_row_index);
 }
+
+cursor* table_db_begin(table *table)
+{
+    void *root_node = pager_get_valid_page(table->pager, table->root_page_index);
+    if (root_node == NULL)
+    {
+        return NULL;
+    }
+
+    cursor* returned_cursor = Malloc(sizeof(cursor));
+    
+    returned_cursor->m_table = table;
+    returned_cursor->m_leaf_node=root_node;
+    returned_cursor->m_row_index=0;
+
+    return returned_cursor;
+}
+
+void cursor_advance(cursor *cursor)
+{
+    cursor->m_row_index++;
+}
+
+bool cursor_is_end(cursor *cursor)
+{
+    return *leaf_node_get_num_records(cursor->m_leaf_node) == cursor->m_row_index;
+}
