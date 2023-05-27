@@ -27,7 +27,7 @@ int main(int argc, char** argv)
             statement m_statement;
             PrepareResult m_prepare_result = prepare_statement(&buffer, &m_statement);
 
-            ensure(m_prepare_result == PREPARE_SUCCESS, "could not prepare statement successfully: error - %d\n",m_prepare_result);
+            ensure(m_prepare_result == PREPARE_SUCCESS, "could not prepare statement successfully: error : %d\n",m_prepare_result);
             ensure(execute_statement(&m_statement, m_table) == EXECUTE_SUCCESS, "could not execute statement\n");
         }
 

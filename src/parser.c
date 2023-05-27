@@ -64,6 +64,10 @@ PrepareResult prepare_select(string_buffer *buffer, statement *statement)
 
     while(id)
     {
+        if(atoi(id)<0)
+        {
+            return PREPARE_SELECT_BAD_ID; 
+        }
         id_vector_push_back(&statement->selected_ids,atoi(id));
 
         id = strtok(NULL," ");
@@ -145,7 +149,12 @@ ExecuteResult execute_insert(statement *statement, table *table)
 ExecuteResult execute_select(statement *statement, table *table)
 {
 
-    void* page = pager_get_page(table->pager,table->root_page_index);
+    void *page = pager_get_valid_page(table->pager, table->root_page_index);
+
+    if(page == NULL)
+    {
+        return EXECUTE_SELECT_EMPTY_DATABASE;
+    }
 
     for(int i = 0; i < statement->selected_ids.size;i++)
     {

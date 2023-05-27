@@ -61,6 +61,18 @@ void *pager_get_page(pager *pager, uint32_t id)
     return pager->pages[id];
 }
 
+void *pager_get_valid_page(pager *pager, uint32_t id)
+{
+    uint32_t file_num_pages = pager->file_length /PAGE_SIZE;
+    
+    if (id >= file_num_pages && pager->pages[id] == NULL)
+    {
+        return NULL;
+    }
+    
+    return pager_get_page(pager,id);
+}
+
 void pager_flush(pager *pager, uint32_t id)
 {
     ensure(pager->pages[id] != NULL, "flushing a null page\n");

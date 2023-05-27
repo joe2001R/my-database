@@ -15,6 +15,7 @@ typedef struct _pager
 
 pager* pager_open(const char* filename);
 void* pager_get_page(pager *pager, uint32_t id);
+void* pager_get_valid_page(pager* pager,uint32_t id);
 void pager_flush(pager *pager, uint32_t id);
 
 #endif
