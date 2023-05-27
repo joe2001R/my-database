@@ -17,10 +17,10 @@ LIBS = -lc
 
 all: db test
 
-$(ODIR):
+$(ODIR): | $(ODIR)
 	mkdir $(ODIR)
 
-$(ODIR)/%.o: $(SDIR)/%.c $(DEPS) $(ODIR)
+$(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
 	$(CC) $(INC) -c -o $@ $< $(CFLAGS)
 
 db: $(OBJ)
