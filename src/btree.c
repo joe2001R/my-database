@@ -33,11 +33,6 @@ static uint32_t* leaf_node_get_key(void* node,uint32_t index)
     return (uint32_t*)(leaf_node_get_record(node,index) + LEAF_NODE_KEY_REL_OFFSET);
 }
 
-static void* leaf_node_get_row(void* node,uint32_t index)
-{
-    return leaf_node_get_record(node,index) + LEAF_NODE_ROW_REL_OFFSET;
-}
-
 static uint32_t leaf_node_lower_bound(void* node,uint32_t key)
 {
     uint32_t num_records = *leaf_node_get_num_records(node);
@@ -85,6 +80,11 @@ string_buffer btree_get_diagnostics()
     return buf;
 }
 
+void* leaf_node_get_row(void *node, uint32_t index)
+{
+    return leaf_node_get_record(node, index) + LEAF_NODE_ROW_REL_OFFSET;
+}
+
 uint32_t *leaf_node_get_num_records(void *node)
 {
     return (uint32_t*)(node + LEAF_NODE_NUM_RECORDS_OFFSET);
@@ -95,7 +95,7 @@ uint32_t *leaf_node_get_right_child(void *node)
     return (uint32_t *)(node + LEAF_NODE_RIGHT_CHILD_OFFSET);
 }
 
-void* leaf_node_find_row(void *node, uint32_t key)
+void *leaf_node_find_row(void *node, uint32_t key, uint32_t *row_index)
 {
     uint32_t num_records = *leaf_node_get_num_records(node);
 
@@ -107,12 +107,17 @@ void* leaf_node_find_row(void *node, uint32_t key)
         return NULL;
     }
 
+    if(row_index != NULL)
+    {
+        *row_index = lower_bound_index;
+    }
+
     return leaf_node_get_row(node,lower_bound_index);
 }
 
 void leaf_node_insert_row(void* node, uint32_t key, void* row_to_insert)
 {
-    ensure(leaf_node_find_row(node,key)==NULL,"Error: key %d already exists.\n",key);
+    ensure(leaf_node_find_row(node,key,NULL)==NULL,"Error: key %d already exists.\n",key);
 
     uint32_t row_to_insert_index = leaf_node_lower_bound(node,key);
 

@@ -63,7 +63,9 @@ uint32_t* leaf_node_get_right_child(void* node);
 
 void leaf_node_root_init(void* node);
 
-void* leaf_node_find_row(void* node,uint32_t key);
+void *leaf_node_get_row(void *node, uint32_t index);
+
+void *leaf_node_find_row(void *node, uint32_t key, uint32_t *row_index);
 void leaf_node_insert_row(void* node,uint32_t key,void* row_to_insert);
 
 #endif

@@ -42,3 +42,32 @@ void table_init_root(table *table)
 
     leaf_node_root_init(root);
 }
+
+cursor* table_db_find(table *table, uint32_t id)
+{
+    void* root_node = pager_get_valid_page(table->pager,table->root_page_index);
+    if(root_node == NULL)
+    {
+        return NULL;
+    }
+
+    uint32_t row_index;
+    void* node = leaf_node_find_row(root_node,id,&row_index);
+    
+    if(node == NULL)
+    {
+        return NULL;
+    }
+
+    cursor* returned_cursor = Malloc(sizeof(cursor));
+    returned_cursor->m_table=table;
+    returned_cursor->m_leaf_node = root_node;
+    returned_cursor->m_row_index = row_index;
+
+    return returned_cursor; 
+}
+
+void* cursor_read(cursor *cursor)
+{
+    return leaf_node_get_row(cursor->m_leaf_node,cursor->m_row_index);
+}

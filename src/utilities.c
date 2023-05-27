@@ -91,5 +91,11 @@ uint32_t id_vector_read(id_vector *this, uint32_t at)
 
 void id_vector_destroy(id_vector *this)
 {
-    free(this->array);
+    destroy((void**)&this->array);
+}
+
+void destroy(void **ptr)
+{
+    free(*ptr);
+    *ptr = NULL;
 }

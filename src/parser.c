@@ -148,19 +148,20 @@ ExecuteResult execute_insert(statement *statement, table *table)
 }
 ExecuteResult execute_select(statement *statement, table *table)
 {
-
-    void *page = pager_get_valid_page(table->pager, table->root_page_index);
-
-    if(page == NULL)
-    {
-        return EXECUTE_SELECT_EMPTY_DATABASE;
-    }
-
     for(int i = 0; i < statement->selected_ids.size;i++)
     {
         row row_to_display;
 
-        row_deserialize(&row_to_display, leaf_node_find_row(page, id_vector_read(&statement->selected_ids,i)));
+        cursor* cursor = table_db_find(table,id_vector_read(&statement->selected_ids,i));
+        
+        if(cursor == NULL)
+        {
+            return EXECUTE_SELECT_ROW_NOT_FOUND;
+        }
+
+        row_deserialize(&row_to_display, cursor_read(cursor));
+
+        destroy((void**)&cursor);
 
         print_row(&row_to_display);
     }

@@ -9,6 +9,7 @@
 
 void ensure(bool condition,const char* error_message, ...);
 void* Malloc(size_t size);
+void destroy(void** ptr);
 
 typedef struct
 {

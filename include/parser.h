@@ -21,7 +21,7 @@ typedef enum
 typedef enum
 {
     EXECUTE_SUCCESS,
-    EXECUTE_SELECT_EMPTY_DATABASE
+    EXECUTE_SELECT_ROW_NOT_FOUND
 
 } ExecuteResult;
 
