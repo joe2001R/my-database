@@ -53,7 +53,6 @@ NodeType *node_get_type(void* node);
 
 #define LEAF_NODE_MAX_NUM_RECORDS (LEAF_NODE_BODY_SIZE / LEAF_NODE_RECORD_SIZE)
 
-static_assert(LEAF_NODE_BODY_SIZE > 0,"leaf body's size is less than or equal to 0");
 static_assert(LEAF_NODE_MAX_NUM_RECORDS > 0, "leaf's node maximum number of records is less than or equal to 0");
 
 string_buffer btree_get_diagnostics();
@@ -67,5 +66,29 @@ void *leaf_node_get_row(void *node, uint32_t index);
 
 void *leaf_node_find_row(void *node, uint32_t key, uint32_t *row_index);
 void leaf_node_insert_row(void* node,uint32_t key,void* row_to_insert);
+
+// internal node header
+
+#define INTERNAL_NODE_HEADER_OFFSET (COMMON_HEADER_OFFSET + COMMON_HEADER_SIZE)
+
+#define INTERNAL_NODE_NUM_KEYS_OFFSET (INTERNAL_NODE_HEADER_OFFSET)
+#define INTERNAL_NODE_NUM_KEYS_SIZE (sizeof(uint32_t))
+
+#define INTERNAL_NODE_HEADER_SIZE (INTERNAL_NODE_NUM_KEYS_SIZE)
+
+// internal node body
+
+#define INTERNAL_NODE_BODY_OFFSET (INTERNAL_NODE_HEADER_OFFSET + INTERNAL_NODE_HEADER_SIZE)
+
+#define INTERNAL_NODE_BODY_SIZE (PAGE_SIZE - INTERNAL_NODE_HEADER_SIZE - COMMON_HEADER_SIZE)
+
+#define INTERNAL_NODE_CHILD_REL_OFFSET (0)
+#define INTERNAL_NODE_CHILD_SIZE (sizeof(uint32_t))
+#define INTERNAL_NODE_KEY_REL_OFFSET (INTERNAL_NODE_CHILD_REL_OFFSET + INTERNAL_NODE_CHILD_SIZE)
+#define INTERNAL_NODE_KEY_SIZE (sizeof(uint32_t))
+
+#define INTERNAL_NODE_MAX_NUM_KEYS ((INTERNAL_NODE_BODY_SIZE - INTERNAL_NODE_CHILD_SIZE)/(INTERNAL_NODE_KEY_SIZE + INTERNAL_NODE_CHILD_SIZE))
+
+static_assert(INTERNAL_NODE_MAX_NUM_KEYS > 0, "internal nodes 's maximum number of keys is less than or equal to 0");
 
 #endif

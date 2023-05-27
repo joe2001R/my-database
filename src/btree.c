@@ -64,8 +64,14 @@ string_buffer btree_get_diagnostics()
 {
     string_buffer buf;
     
-    char char_arr[256];
+    char char_arr[512];
     char* str = char_arr;
+
+    str = str + sprintf(str, "page size is : %d\n", PAGE_SIZE);
+    str = str + sprintf(str, "maximum number of pages is : %d\n", MAX_PAGE_NO);
+
+    str = str + sprintf(str, "----------\n");
+
     str = str + sprintf(str,"common header size is : %ld\n", COMMON_HEADER_SIZE);
     str = str + sprintf(str,"leaf node header size is : %ld\n", LEAF_NODE_HEADER_SIZE);
     str = str + sprintf(str,"leaf node body size is : %ld\n", LEAF_NODE_BODY_SIZE);
@@ -73,6 +79,12 @@ string_buffer btree_get_diagnostics()
     str = str + sprintf(str,"\tleaf node key size is : %ld\n", LEAF_NODE_KEY_SIZE);
     str = str + sprintf(str,"\tleaf node row size is : %ld\n", ROW_SIZE);
     str = str + sprintf(str,"leaf node body max number of record is : %ld\n", LEAF_NODE_MAX_NUM_RECORDS);
+
+    str = str + sprintf(str,"----------\n");
+
+    str = str + sprintf(str, "internal node header size is : %ld\n",INTERNAL_NODE_HEADER_SIZE);
+    str = str + sprintf(str, "internal node body size is : %ld\n", INTERNAL_NODE_BODY_SIZE);
+    str = str + sprintf(str, "internal node maximum number of keys is : %ld\n", INTERNAL_NODE_MAX_NUM_KEYS);
 
     string_buffer_init(&buf);
     string_buffer_store(&buf,char_arr);
