@@ -204,7 +204,7 @@ ExecuteResult execute_insert(statement *statement, table *table)
     void* row_to_insert = Malloc(ROW_SIZE);
     row_serialize(row_to_insert,&statement->row_to_insert);
 
-    leaf_node_insert_row(page,statement->row_to_insert.id,row_to_insert);
+    leaf_node_insert_row(page,statement->row_to_insert.id,row_to_insert,table);
     
     free(row_to_insert);
 

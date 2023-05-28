@@ -7,6 +7,7 @@
 
 #include "pager.h"
 #include "row.h"
+#include "table.fwd.h"
 
 typedef struct _table
 {
@@ -20,6 +21,7 @@ typedef struct _cursor
     table* m_table;
     void* m_leaf_node;
     uint32_t m_row_index;
+    bool m_end_of_table;
 } cursor;
 
 table* table_db_open(const char* filename);

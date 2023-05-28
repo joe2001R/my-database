@@ -63,6 +63,7 @@ cursor* table_db_find(table *table, uint32_t id)
     returned_cursor->m_table=table;
     returned_cursor->m_leaf_node = root_node;
     returned_cursor->m_row_index = row_index;
+    returned_cursor->m_end_of_table = false;
 
     return returned_cursor; 
 }
@@ -85,16 +86,32 @@ cursor* table_db_begin(table *table)
     returned_cursor->m_table = table;
     returned_cursor->m_leaf_node=root_node;
     returned_cursor->m_row_index=0;
+    returned_cursor->m_end_of_table = (*leaf_node_get_num_records(root_node)==0);
 
     return returned_cursor;
 }
 
 void cursor_advance(cursor *cursor)
 {
-    cursor->m_row_index++;
+    if(cursor->m_row_index + 1 < *leaf_node_get_num_records(cursor->m_leaf_node))
+    {
+        cursor->m_row_index++;
+        return;
+    }
+
+    uint32_t right_child_page_id = *leaf_node_get_right_child(cursor->m_leaf_node);
+
+    if(right_child_page_id == 0)
+    {
+        cursor->m_end_of_table = true;
+        return;
+    }
+
+    cursor->m_leaf_node = pager_get_valid_page_ensure(cursor->m_table->pager,*leaf_node_get_right_child(cursor->m_leaf_node));
+    cursor->m_row_index = 0;
 }
 
 bool cursor_is_end(cursor *cursor)
 {
-    return *leaf_node_get_num_records(cursor->m_leaf_node) == cursor->m_row_index;
+    return cursor->m_end_of_table;
 }

@@ -73,6 +73,32 @@ void *pager_get_valid_page(pager *pager, uint32_t id)
     return pager_get_page(pager,id);
 }
 
+void *pager_get_valid_page_ensure(pager *pager, uint32_t id)
+{
+    void* page = pager_get_valid_page(pager,id);
+    ensure(page!=NULL,"Error: valid page is NULL in `pager_get_valid_page_ensure` call\n");
+    
+    return page;
+}
+
+void* pager_get_free_page(pager *pager)
+{
+    return pager_get_page(pager,pager->num_pages);
+}
+
+int32_t pager_find_page_id(pager *pager, void *page)
+{
+    for(int i = 0; i < pager->num_pages;i++)
+    {
+        if(pager->pages[i] == page)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 void pager_flush(pager *pager, uint32_t id)
 {
     ensure(pager->pages[id] != NULL, "flushing a null page\n");
