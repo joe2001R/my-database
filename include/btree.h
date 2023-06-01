@@ -101,5 +101,6 @@ uint32_t* internal_node_get_key(void* node,uint32_t index);
 uint32_t* internal_node_get_child(void* node,uint32_t index);
 
 void internal_node_insert_node(void* internal_node,void* node_to_insert,uint32_t node_page_index,pager* pager);
+void* internal_node_find_node(void* internal_node,uint32_t key,pager* pager);
 
 #endif

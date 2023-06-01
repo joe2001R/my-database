@@ -310,3 +310,11 @@ void internal_node_insert_node(void *internal_node, void *node_to_insert, uint32
     }
 
 }
+
+void *internal_node_find_node(void *internal_node, uint32_t key, pager *pager)
+{
+    uint32_t child_index = internal_node_child_index_lower_bound(internal_node,key);
+
+    return internal_node_pager_get_child(internal_node,child_index,pager);
+}
+

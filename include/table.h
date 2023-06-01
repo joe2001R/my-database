@@ -31,10 +31,11 @@ void table_init_root(table* table);
 
 cursor* table_db_begin(table* table);
 cursor* table_db_find(table* table,uint32_t id);
+void    table_db_insert(table* table,uint32_t key,row* row_to_insert);
 
 void* cursor_read(cursor* cursor);
 
 void cursor_advance(cursor* cursor);
-bool cursor_is_end(cursor* cursor);
+bool cursor_is_end(cursor* cursor); 
 
 #endif
