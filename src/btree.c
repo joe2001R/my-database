@@ -117,16 +117,13 @@ static uint32_t pager_get_page_id(pager* pager,void* page)
     return (uint32_t)id;
 }
 
-static void internal_node_root_init(void *node, void *leaf_node_1, void *leaf_node_2, table *table)
+static void internal_node_init(void *node, void *leaf_node_1, void *leaf_node_2, pager *pager)
 {
     *node_get_type(node) = INTERNAL_NODE;
-    *node_get_is_root(node) = true;
     *internal_node_get_key(node, 0) = leaf_node_get_max_key(leaf_node_1);
-    *internal_node_get_child(node, 0) = pager_get_page_id(table->pager, leaf_node_1);
-    *internal_node_get_child(node, 1) = pager_get_page_id(table->pager, leaf_node_2);
+    *internal_node_get_child(node, 0) = pager_get_page_id(pager, leaf_node_1);
+    *internal_node_get_child(node, 1) = pager_get_page_id(pager, leaf_node_2);
     *internal_node_get_num_keys(node) = 1;
-
-    table->root_page_index = pager_get_page_id(table->pager,node);
 }
 
 static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *row_to_insert, table *table)
@@ -159,7 +156,18 @@ static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *r
 
     ensure(*node_get_type(old_leaf_node)==LEAF_NODE,"Error: split and insert applies only for the root leaf node\n");
 
-    internal_node_root_init(old_leaf_node,new_leaf_node_1,new_leaf_node_2,table);
+    internal_node_init(old_leaf_node, new_leaf_node_1, new_leaf_node_2, table->pager);
+
+    if(*node_get_is_root(old_leaf_node))
+    {
+        *node_get_is_root(old_leaf_node) = true;
+        table->root_page_index = pager_get_page_id(table->pager, old_leaf_node);
+    }
+    else
+    {
+        fprintf(stderr,"Not implemented yet! : splitting a non root leaf node!\n");
+        exit(EXIT_FAILURE);
+    }
 
     *node_get_parent(new_leaf_node_1) = pager_get_page_id(table->pager,old_leaf_node);
     *node_get_parent(new_leaf_node_2) = pager_get_page_id(table->pager,old_leaf_node);

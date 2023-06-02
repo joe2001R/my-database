@@ -44,4 +44,10 @@ describe 'database' do
         
     end
 
+    it 'persists even more records' do
+        run_script(["insert 100 joestar","insert 200 jotaro","insert 3 joe","insert 500 joe1","insert 600 joe2","insert 700 joe3",".exit"])
+        result = run_script(["select *",".exit"])
+        expect(result).to match_array(["db > ", "db > 3 joe" ,"100 joestar","200 jotaro","500 joe1","600 joe2","700 joe3"])
+    end        
+
 end

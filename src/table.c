@@ -8,6 +8,8 @@
 
 /*** private ***/
 
+#define ROOT_NODE_PAGE_INDEX 0
+
 static struct _LeafNodeRowPair
 {
     void* node;
@@ -64,9 +66,16 @@ void table_db_close(table* table)
     free(table);
 }
 
+void table_find_root(table *table)
+{
+    table->root_page_index = ROOT_NODE_PAGE_INDEX;
+
+    ensure(*node_get_is_root(pager_get_valid_page_ensure(table->pager,ROOT_NODE_PAGE_INDEX)),"Error: node in page index %d is not root node\n",ROOT_NODE_PAGE_INDEX);
+}
+
 void table_init_root(table *table)
 {
-    table->root_page_index = 0;
+    table->root_page_index = ROOT_NODE_PAGE_INDEX;
 
     void* root = pager_get_page(table->pager,table->root_page_index);
 
@@ -112,11 +121,13 @@ cursor* table_db_begin(table *table)
     }
 
     cursor* returned_cursor = Malloc(sizeof(cursor));
+
+    LeafNodeRowPair leaf_node_row_pair = find_row(root_node,0,NULL,table->pager);
     
     returned_cursor->m_table = table;
-    returned_cursor->m_leaf_node=root_node;
+    returned_cursor->m_leaf_node = leaf_node_row_pair.node;
     returned_cursor->m_row_index=0;
-    returned_cursor->m_end_of_table = (*leaf_node_get_num_records(root_node)==0);
+    returned_cursor->m_end_of_table = (*leaf_node_get_num_records(leaf_node_row_pair.node) == 0);
 
     return returned_cursor;
 }

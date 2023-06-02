@@ -28,6 +28,7 @@ table* table_db_open(const char* filename);
 void table_db_close(table* table);
 
 void table_init_root(table* table);
+void table_find_root(table* table);
 
 cursor* table_db_begin(table* table);
 cursor* table_db_find(table* table,uint32_t id);

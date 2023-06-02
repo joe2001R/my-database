@@ -198,6 +198,10 @@ ExecuteResult execute_insert(statement *statement, table *table)
     {
         table_init_root(table);
     }
+    else
+    {
+        table_find_root(table);
+    }
 
     table_db_insert(table,statement->row_to_insert.id,&statement->row_to_insert);
 
