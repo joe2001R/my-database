@@ -390,7 +390,7 @@ void internal_node_insert_node(void *internal_node, void *node_to_insert,pager* 
 
     uint32_t node_page_index = pager_get_page_id(pager,node_to_insert);
 
-    if(internal_node_get_num_keys(internal_node)==INTERNAL_NODE_MAX_NUM_KEYS)
+    if(*internal_node_get_num_keys(internal_node)==INTERNAL_NODE_MAX_NUM_KEYS)
     {
         fprintf(stderr,"Error:Split and insert internal node not implemented yet!\n");
         exit(EXIT_FAILURE);

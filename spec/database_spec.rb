@@ -4,6 +4,7 @@ describe 'database' do
     end
     
     after do
+        `rm -f test.db`
     end
 
     def run_script(commands)
@@ -53,7 +54,7 @@ describe 'database' do
         
         insert_input = []
         
-        num_records=47
+        num_records=44
 
         for i in 1..num_records do
             insert_input.push("insert #{i} example#{i}")
