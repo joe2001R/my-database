@@ -2,7 +2,7 @@ describe 'database' do
     before do
         `rm -f test.db`
     end
-    
+
     after do
         `rm -f test.db`
     end

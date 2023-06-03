@@ -95,13 +95,16 @@ void leaf_node_insert_row(void* node,uint32_t key,void* row_to_insert,table* tab
 
 #define INTERNAL_NODE_MAX_NUM_KEYS ((INTERNAL_NODE_BODY_SIZE - INTERNAL_NODE_CHILD_SIZE)/(INTERNAL_NODE_KEY_SIZE + INTERNAL_NODE_CHILD_SIZE))
 
+#define INTERNAL_NODE_LEFT_SPLIT_COUNT ((INTERNAL_NODE_MAX_NUM_KEYS + 1)/2 - 1)
+#define INTERNAL_NODE_RIGHT_SPLIT_COUNT (INTERNAL_NODE_MAX_NUM_KEYS + 1 - INTERNAL_NODE_LEFT_SPLIT_COUNT - 1)
+
 static_assert(INTERNAL_NODE_MAX_NUM_KEYS > 0, "internal nodes 's maximum number of keys is less than or equal to 0");
 
 uint32_t* internal_node_get_num_keys(void* node);
 uint32_t* internal_node_get_key(void* node,uint32_t index);
 uint32_t* internal_node_get_child(void* node,uint32_t index);
 
-void internal_node_insert_node(void* internal_node,void* node_to_insert,pager* pager);
+void internal_node_insert_node(void* internal_node,void* node_to_insert,table* table);
 void* internal_node_find_node(void* internal_node,uint32_t key,pager* pager);
 
 #endif

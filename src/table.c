@@ -140,9 +140,7 @@ void cursor_advance(cursor *cursor)
         return;
     }
 
-    uint32_t right_child_page_id = *leaf_node_get_right_child(cursor->m_leaf_node);
-
-    if(right_child_page_id == 0)
+    if(*leaf_node_get_right_child(cursor->m_leaf_node) == 0)
     {
         cursor->m_end_of_table = true;
         return;
