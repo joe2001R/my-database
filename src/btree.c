@@ -109,6 +109,28 @@ static uint32_t leaf_node_get_max_key(void* node)
     return *leaf_node_get_key(node,*leaf_node_get_num_records(node)-1);
 }
 
+static uint32_t internal_node_get_node_key(void* internal_node,pager* pager);
+
+static uint32_t node_get_node_key(void* node,pager* pager)
+{
+    if(*node_get_type(node) == LEAF_NODE)
+    {
+        return leaf_node_get_max_key(node);
+    }
+    else if(*node_get_type(node) == INTERNAL_NODE)
+    {
+        return internal_node_get_node_key(node,pager);
+    }
+
+    fprintf(stderr,"Error: invalid node type encountered in `node_get_node_key`");
+    exit(EXIT_FAILURE);
+}
+
+static uint32_t internal_node_get_node_key(void* internal_node,pager* pager)
+{
+    return node_get_node_key(internal_node_pager_get_right_child(internal_node, pager), pager);
+}
+
 static uint32_t pager_get_page_id(pager* pager,void* page)
 {
     int32_t id = pager_find_page_id(pager,page);
@@ -117,12 +139,12 @@ static uint32_t pager_get_page_id(pager* pager,void* page)
     return (uint32_t)id;
 }
 
-static void internal_node_init(void *node, void *leaf_node_1, void *leaf_node_2, pager *pager)
+static void internal_node_init(void *node, void *node_1, void *node_2, pager *pager)
 {
     *node_get_type(node) = INTERNAL_NODE;
-    *internal_node_get_key(node, 0) = leaf_node_get_max_key(leaf_node_1);
-    *internal_node_get_child(node, 0) = pager_get_page_id(pager, leaf_node_1);
-    *internal_node_get_child(node, 1) = pager_get_page_id(pager, leaf_node_2);
+    *internal_node_get_key(node, 0) = node_get_node_key(node_1,pager);
+    *internal_node_get_child(node, 0) = pager_get_page_id(pager, node_1);
+    *internal_node_get_child(node, 1) = pager_get_page_id(pager, node_2);
     *internal_node_get_num_keys(node) = 1;
 }
 
@@ -386,7 +408,7 @@ uint32_t *internal_node_get_child(void *node, uint32_t index)
 void internal_node_insert_node(void *internal_node, void *node_to_insert,pager* pager)
 {
     // scan keys: lower bound
-    uint32_t child_index = internal_node_child_index_lower_bound(internal_node,leaf_node_get_max_key(node_to_insert));
+    uint32_t child_index = internal_node_child_index_lower_bound(internal_node, node_get_node_key(node_to_insert,pager));
 
     uint32_t node_page_index = pager_get_page_id(pager,node_to_insert);
 
@@ -397,7 +419,7 @@ void internal_node_insert_node(void *internal_node, void *node_to_insert,pager* 
     }
 
     //edge case: node_to_insert is to be ordered after internal_node's right child
-    if (leaf_node_get_max_key(node_to_insert) > leaf_node_get_max_key(internal_node_pager_get_right_child(internal_node,pager)))
+    if (node_get_node_key(node_to_insert, pager) > node_get_node_key(internal_node_pager_get_right_child(internal_node, pager),pager))
     {
         child_index +=1;
     }
@@ -416,7 +438,7 @@ void internal_node_insert_node(void *internal_node, void *node_to_insert,pager* 
 
     for (int i = MIN(child_index,*internal_node_get_num_keys(internal_node)-1);i<*internal_node_get_num_keys(internal_node);i++)
     {
-        *internal_node_get_key(internal_node,i) = leaf_node_get_max_key(internal_node_pager_get_child(internal_node,i,pager));
+        *internal_node_get_key(internal_node,i) = node_get_node_key(internal_node_pager_get_child(internal_node,i,pager),pager);
     }
 
     *node_get_parent(node_to_insert) = pager_get_page_id(pager,internal_node);
