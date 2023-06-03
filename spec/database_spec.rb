@@ -4,7 +4,6 @@ describe 'database' do
     end
     
     after do
-        `rm -f test.db`
     end
 
     def run_script(commands)
@@ -48,6 +47,30 @@ describe 'database' do
         run_script(["insert 100 joestar","insert 200 jotaro","insert 3 joe","insert 500 joe1","insert 600 joe2","insert 700 joe3",".exit"])
         result = run_script(["select *",".exit"])
         expect(result).to match_array(["db > ", "db > 3 joe" ,"100 joestar","200 jotaro","500 joe1","600 joe2","700 joe3"])
-    end        
+    end
+    
+    it 'persists much more records' do
+        
+        insert_input = []
+        
+        num_records=47
+
+        for i in 1..num_records do
+            insert_input.push("insert #{i} example#{i}")
+        end
+
+        insert_input.push(".exit")
+
+        run_script(insert_input)
+
+        expected_output = ["db > ","db > 1 example1"]
+
+        for i in 2..num_records do
+            expected_output.push("#{i} example#{i}")
+        end
+        result = run_script(["select *",".exit"])
+
+        expect(result).to match_array(expected_output)
+    end
 
 end

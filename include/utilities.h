@@ -14,6 +14,7 @@ void destroy(void** ptr);
 typedef struct
 {
     size_t buffer_size;
+    size_t buffer_capacity;
     char* string;
 } string_buffer;
 
@@ -21,6 +22,8 @@ void string_buffer_init(string_buffer* buffer);
 void string_buffer_destroy(string_buffer* buffer);
 void string_buffer_read(string_buffer *buffer);
 void string_buffer_store(string_buffer *buffer, const char *string);
+void string_buffer_append(string_buffer* buffer,const char* string);
+void string_buffer_append2(string_buffer* buffer,const char* format,...);
 
 typedef struct _id_vector
 {

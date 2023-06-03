@@ -105,3 +105,13 @@ void pager_flush(pager *pager, uint32_t id)
     ensure(lseek(pager->fd, id * PAGE_SIZE, SEEK_SET) != -1, "invalid file seek in `pager_flush`\n");
     ensure(write(pager->fd, pager->pages[id], PAGE_SIZE) != -1, "could not write to file in `pager_flush`\n");
 }
+
+void pager_destroy_page(pager *pager, uint32_t id)
+{
+    if(id != 0 && id == pager->num_pages - 1)
+    {
+        pager->num_pages = pager->num_pages - 1;
+    }
+    
+    destroy(&pager->pages[id]);
+}

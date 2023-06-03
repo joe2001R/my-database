@@ -61,6 +61,7 @@ NodeType *node_get_type(void* node);
 static_assert(LEAF_NODE_MAX_NUM_RECORDS > 0, "leaf's node maximum number of records is less than or equal to 0");
 
 string_buffer btree_get_diagnostics();
+string_buffer btree_print_tree(void* root_node,pager* pager);
 
 uint32_t* leaf_node_get_num_records(void* node);
 uint32_t* leaf_node_get_right_child(void* node);
@@ -100,7 +101,7 @@ uint32_t* internal_node_get_num_keys(void* node);
 uint32_t* internal_node_get_key(void* node,uint32_t index);
 uint32_t* internal_node_get_child(void* node,uint32_t index);
 
-void internal_node_insert_node(void* internal_node,void* node_to_insert,uint32_t node_page_index,pager* pager);
+void internal_node_insert_node(void* internal_node,void* node_to_insert,pager* pager);
 void* internal_node_find_node(void* internal_node,uint32_t key,pager* pager);
 
 #endif

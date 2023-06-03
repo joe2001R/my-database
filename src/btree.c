@@ -128,6 +128,8 @@ static void internal_node_init(void *node, void *leaf_node_1, void *leaf_node_2,
 
 static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *row_to_insert, table *table)
 {
+    ensure(*node_get_type(old_leaf_node) == LEAF_NODE, "Error: split and insert applies only for the root leaf node\n");
+
     void *new_leaf_node_1 = pager_get_free_page(table->pager);
     void *new_leaf_node_2 = pager_get_free_page(table->pager);
 
@@ -152,59 +154,151 @@ static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *r
     *leaf_node_get_num_records(new_leaf_node_1)=LEAF_NODE_LEFT_SPLIT_COUNT;
     *leaf_node_get_num_records(new_leaf_node_2)=LEAF_NODE_RIGHT_SPLIT_COUNT;
     
-    *leaf_node_get_right_child(new_leaf_node_1)=pager_get_page_id(table->pager,new_leaf_node_2);
-
-    ensure(*node_get_type(old_leaf_node)==LEAF_NODE,"Error: split and insert applies only for the root leaf node\n");
-
-    internal_node_init(old_leaf_node, new_leaf_node_1, new_leaf_node_2, table->pager);
-
     if(*node_get_is_root(old_leaf_node))
     {
+        internal_node_init(old_leaf_node, new_leaf_node_1, new_leaf_node_2, table->pager);
         *node_get_is_root(old_leaf_node) = true;
+
         table->root_page_index = pager_get_page_id(table->pager, old_leaf_node);
+
+        *node_get_parent(new_leaf_node_1) = pager_get_page_id(table->pager, old_leaf_node);
+        *node_get_parent(new_leaf_node_2) = pager_get_page_id(table->pager, old_leaf_node);
     }
     else
-    {
-        fprintf(stderr,"Not implemented yet! : splitting a non root leaf node!\n");
-        exit(EXIT_FAILURE);
+    {   // copy and swap idiom - look at operations done on new_leaf_node_1
+        *node_get_parent(new_leaf_node_1) = *node_get_parent(old_leaf_node);
+
+        uint32_t new_leaf_node_2_page_id = pager_get_page_id(table->pager,new_leaf_node_2);
+
+        memcpy(old_leaf_node,new_leaf_node_1,PAGE_SIZE);
+        memcpy(new_leaf_node_1,new_leaf_node_2,PAGE_SIZE);
+        pager_destroy_page(table->pager, new_leaf_node_2_page_id);
+
+        new_leaf_node_2 = new_leaf_node_1; //!! dangling pointer
+        new_leaf_node_1 = old_leaf_node;
+
+        internal_node_insert_node(pager_get_valid_page_ensure(table->pager, *node_get_parent(new_leaf_node_1)),new_leaf_node_2,table->pager);
     }
 
-    *node_get_parent(new_leaf_node_1) = pager_get_page_id(table->pager,old_leaf_node);
-    *node_get_parent(new_leaf_node_2) = pager_get_page_id(table->pager,old_leaf_node);
+    *leaf_node_get_right_child(new_leaf_node_1) = pager_get_page_id(table->pager, new_leaf_node_2);
 
     destroy(&new_record);
 }
 
+static string_buffer get_cumulated_padding(const char* padding, size_t level)
+{
+    string_buffer buffer;
+
+    string_buffer_init(&buffer);
+
+    if(level == 0)
+    {
+        string_buffer_store(&buffer,"");
+    }
+
+    for(;level>0;level--)
+    {
+        string_buffer_append(&buffer,padding);
+    }
+
+    return buffer;
+}
+
+static void btree_print_leaf_node(void* leaf_node,string_buffer* buffer,const char* padding,size_t level)
+{
+    string_buffer cumulated_padding_buffer = get_cumulated_padding(padding,level);
+
+    string_buffer_append2(buffer,"%sleaf node: num of records is %ld\n",cumulated_padding_buffer.string,*leaf_node_get_num_records(leaf_node));
+
+    for(uint32_t i = 0;i<*leaf_node_get_num_records(leaf_node);i++)
+    {
+        row row_to_print;
+
+        row_deserialize(&row_to_print,leaf_node_get_row(leaf_node,i));
+
+        string_buffer_append2(buffer,"%s%skey:%d, value:%s\n",cumulated_padding_buffer.string,padding,row_to_print.id,row_to_print.name);
+    }
+
+    string_buffer_destroy(&cumulated_padding_buffer);
+}
+
+static void btree_print_node(void* node,string_buffer* buffer,size_t level,pager* pager);
+
+static void btree_print_internal_node(void* internal_node,string_buffer* buffer,const char* padding,size_t level,pager* pager)
+{
+    string_buffer cumulated_padding_buffer = get_cumulated_padding(padding, level);
+
+    string_buffer_append2(buffer,"%sinternal node: num of nodes is %d\n",cumulated_padding_buffer.string,*internal_node_get_num_keys(internal_node)+1);
+
+    for(uint32_t i = 0;i<*internal_node_get_num_keys(internal_node);i++)
+    {
+        string_buffer_append2(buffer,"%s%schild%d's key is %d\n",cumulated_padding_buffer.string,padding,i,*internal_node_get_key(internal_node,i));
+        
+        btree_print_node(internal_node_pager_get_child(internal_node, i, pager), buffer, level + 1, pager);
+    }
+
+    string_buffer_append2(buffer, "%s%sright child\n", cumulated_padding_buffer.string, padding);
+    btree_print_node(internal_node_pager_get_right_child(internal_node, pager), buffer, level + 1, pager);
+
+    string_buffer_destroy(&cumulated_padding_buffer);
+}
+
+static void btree_print_node(void* node,string_buffer* buffer,size_t level,pager* pager)
+{
+    static const char* padding = "    ";
+
+    if (*node_get_type(node) == LEAF_NODE)
+    {
+        btree_print_leaf_node(node, buffer, padding, level);
+    }
+    else if (*node_get_type(node) == INTERNAL_NODE)
+    {
+        btree_print_internal_node(node, buffer, padding, level, pager);
+    }
+    else
+    {
+        fprintf(stderr, "Invalid node type encountered in `btree_print_node` call\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 /*** ------------------------------------------------------------- ***/
+
+string_buffer btree_print_tree(void* root_node,pager* pager)
+{
+    string_buffer btree;
+
+    string_buffer_init(&btree);
+
+    btree_print_node(root_node,&btree,0,pager);
+
+    return btree;
+}
 
 string_buffer btree_get_diagnostics()
 {
     string_buffer buf;
-    
-    char char_arr[512];
-    char* str = char_arr;
-
-    str = str + sprintf(str, "page size is : %d\n", PAGE_SIZE);
-    str = str + sprintf(str, "maximum number of pages is : %d\n", MAX_PAGE_NO);
-
-    str = str + sprintf(str, "----------\n");
-
-    str = str + sprintf(str,"common header size is : %ld\n", COMMON_HEADER_SIZE);
-    str = str + sprintf(str,"leaf node header size is : %ld\n", LEAF_NODE_HEADER_SIZE);
-    str = str + sprintf(str,"leaf node body size is : %ld\n", LEAF_NODE_BODY_SIZE);
-    str = str + sprintf(str,"leaf node record size is : %ld\n", LEAF_NODE_RECORD_SIZE);
-    str = str + sprintf(str,"\tleaf node key size is : %ld\n", LEAF_NODE_KEY_SIZE);
-    str = str + sprintf(str,"\tleaf node row size is : %ld\n", ROW_SIZE);
-    str = str + sprintf(str,"leaf node body max number of record is : %ld\n", LEAF_NODE_MAX_NUM_RECORDS);
-
-    str = str + sprintf(str,"----------\n");
-
-    str = str + sprintf(str, "internal node header size is : %ld\n",INTERNAL_NODE_HEADER_SIZE);
-    str = str + sprintf(str, "internal node body size is : %ld\n", INTERNAL_NODE_BODY_SIZE);
-    str = str + sprintf(str, "internal node maximum number of keys is : %ld\n", INTERNAL_NODE_MAX_NUM_KEYS);
 
     string_buffer_init(&buf);
-    string_buffer_store(&buf,char_arr);
+
+    string_buffer_append2(&buf, "page size is : %d\n", PAGE_SIZE);
+    string_buffer_append2(&buf, "maximum number of pages is : %d\n", MAX_PAGE_NO);
+
+    string_buffer_append2(&buf, "----------\n");
+    
+    string_buffer_append2(&buf, "common header size is : %ld\n", COMMON_HEADER_SIZE);
+    string_buffer_append2(&buf, "leaf node header size is : %ld\n", LEAF_NODE_HEADER_SIZE);
+    string_buffer_append2(&buf, "leaf node body size is : %ld\n", LEAF_NODE_BODY_SIZE);
+    string_buffer_append2(&buf, "leaf node record size is : %ld\n", LEAF_NODE_RECORD_SIZE);
+    string_buffer_append2(&buf, "\tleaf node key size is : %ld\n", LEAF_NODE_KEY_SIZE);
+    string_buffer_append2(&buf, "\tleaf node row size is : %ld\n", ROW_SIZE);
+    string_buffer_append2(&buf, "leaf node body max number of record is : %ld\n", LEAF_NODE_MAX_NUM_RECORDS);
+
+    string_buffer_append2(&buf, "----------\n");
+
+    string_buffer_append2(&buf, "internal node header size is : %ld\n", INTERNAL_NODE_HEADER_SIZE);
+    string_buffer_append2(&buf, "internal node body size is : %ld\n", INTERNAL_NODE_BODY_SIZE);
+    string_buffer_append2(&buf, "internal node maximum number of keys is : %ld\n", INTERNAL_NODE_MAX_NUM_KEYS);
 
     return buf;
 }
@@ -289,10 +383,18 @@ uint32_t *internal_node_get_child(void *node, uint32_t index)
     return (uint32_t*)(node + INTERNAL_NODE_BODY_OFFSET + (INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE)*index +  INTERNAL_NODE_CHILD_REL_OFFSET );
 }
 
-void internal_node_insert_node(void *internal_node, void *node_to_insert, uint32_t node_page_index,pager* pager)
+void internal_node_insert_node(void *internal_node, void *node_to_insert,pager* pager)
 {
     // scan keys: lower bound
     uint32_t child_index = internal_node_child_index_lower_bound(internal_node,leaf_node_get_max_key(node_to_insert));
+
+    uint32_t node_page_index = pager_get_page_id(pager,node_to_insert);
+
+    if(internal_node_get_num_keys(internal_node)==INTERNAL_NODE_MAX_NUM_KEYS)
+    {
+        fprintf(stderr,"Error:Split and insert internal node not implemented yet!\n");
+        exit(EXIT_FAILURE);
+    }
 
     //edge case: node_to_insert is to be ordered after internal_node's right child
     if (leaf_node_get_max_key(node_to_insert) > leaf_node_get_max_key(internal_node_pager_get_right_child(internal_node,pager)))
@@ -317,6 +419,7 @@ void internal_node_insert_node(void *internal_node, void *node_to_insert, uint32
         *internal_node_get_key(internal_node,i) = leaf_node_get_max_key(internal_node_pager_get_child(internal_node,i,pager));
     }
 
+    *node_get_parent(node_to_insert) = pager_get_page_id(pager,internal_node);
 }
 
 void *internal_node_find_node(void *internal_node, uint32_t key, pager *pager)

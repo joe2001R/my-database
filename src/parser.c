@@ -89,6 +89,12 @@ void do_meta_command(string_buffer *buffer, table *table)
         printf(buffer.string);
         string_buffer_destroy(&buffer);
     }
+    else if(strcmp(buffer->string,".btree") == 0)
+    {
+        string_buffer buffer = btree_print_tree(pager_get_valid_page_ensure(table->pager,table->root_page_index),table->pager);
+        printf(buffer.string);
+        string_buffer_destroy(&buffer);
+    }
 }
 
 PrepareResult prepare_statement(string_buffer *buffer, statement *statement)
