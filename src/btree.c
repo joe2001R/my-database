@@ -200,7 +200,7 @@ static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *r
         internal_node_root_init(old_leaf_node, new_leaf_node_1, new_leaf_node_2, table);
     }
     else
-    {   // copy and swap idiom - look at operations done on new_leaf_node_1
+    {   
         *node_get_parent(new_leaf_node_1) = *node_get_parent(old_leaf_node);
 
         uint32_t new_leaf_node_2_page_id = pager_get_page_id(table->pager,new_leaf_node_2);
@@ -212,7 +212,12 @@ static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *r
         new_leaf_node_2 = new_leaf_node_1; //!! dangling pointer
         new_leaf_node_1 = old_leaf_node;
 
-        internal_node_insert_node(pager_get_valid_page_ensure(table->pager, *node_get_parent(new_leaf_node_1)),new_leaf_node_2,table);
+        void* internal_node = pager_get_valid_page_ensure(table->pager, *node_get_parent(new_leaf_node_1));
+        
+        uint32_t old_index = internal_node_child_index_lower_bound(internal_node,key);
+
+        *internal_node_get_key(internal_node,old_index) = leaf_node_get_max_key(new_leaf_node_1);
+        internal_node_insert_node(internal_node,new_leaf_node_2,table);
     }
 
     *leaf_node_get_right_child(new_leaf_node_1) = pager_get_page_id(table->pager, new_leaf_node_2);

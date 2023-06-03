@@ -54,7 +54,7 @@ describe 'database' do
         
         insert_input = []
         
-        num_records=44
+        num_records=65
 
         for i in 1..num_records do
             insert_input.push("insert #{i} example#{i}")
@@ -70,6 +70,48 @@ describe 'database' do
             expected_output.push("#{i} example#{i}")
         end
         result = run_script(["select *",".exit"])
+
+        expect(result).to match_array(expected_output)
+    end
+
+    it 'persists records correctly regardless of order of insert' do
+        insert_input = 
+        [
+            "insert 10 joe",
+            "insert 100 joe",
+            "insert 50 joe",
+            "insert 40 joe",
+            "insert 20 joe",
+            "insert 90 joe",
+            "insert 15 joe",
+            "insert 18 joe",
+            "insert 4 joe",
+            ".exit"
+        ]
+
+        run_script(insert_input)
+        result = run_script([".btree",".exit"])
+
+        expected_output = 
+        [
+        "db > internal node: num of nodes is 3",
+        "    child0's key is 15",
+        "    leaf node: num of records is 3",
+        "        key:4, value:joe",
+        "        key:10, value:joe",
+        "        key:15, value:joe",
+        "    child1's key is 40",
+        "    leaf node: num of records is 3",
+        "        key:18, value:joe",
+        "        key:20, value:joe",
+        "        key:40, value:joe",
+        "    right child",
+        "    leaf node: num of records is 3",
+        "        key:50, value:joe",
+        "        key:90, value:joe",
+        "        key:100, value:joe",
+        "db > "
+        ]
 
         expect(result).to match_array(expected_output)
     end
