@@ -91,7 +91,7 @@ void do_meta_command(string_buffer *buffer, table *table)
     }
     else if(strcmp(buffer->string,".btree") == 0)
     {
-        string_buffer buffer = btree_print_tree(pager_get_valid_page_ensure(table->pager,table->root_page_index),table->pager);
+        string_buffer buffer = table_print_btree(table);
         printf(buffer.string);
         string_buffer_destroy(&buffer);
     }
@@ -187,22 +187,9 @@ ExecuteResult execute_statement(statement *statement, table *table)
     exit(EXIT_FAILURE);
 }
 
-static bool pager_is_empty(pager* this)
-{
-    for(int i = 0; i < MAX_PAGE_NO;i++)
-    {
-        if(this->pages[i]!=NULL)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 ExecuteResult execute_insert(statement *statement, table *table)
 {
-    if (table->pager->file_length == 0 && pager_is_empty(table->pager))
+    if (table_db_is_empty(table))
     {
         table_init_root(table);
     }

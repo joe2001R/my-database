@@ -1,3 +1,4 @@
+#include "pager.def.h"
 #include "pager.h"
 #include "utilities.h"
 
@@ -114,4 +115,17 @@ void pager_destroy_page(pager *pager, uint32_t id)
     }
     
     DESTROY(pager->pages[id]);
+}
+
+bool pager_is_empty(pager *pager)
+{
+    for (int i = 0; i < MAX_PAGE_NO; i++)
+    {
+        if (pager->pages[i] != NULL)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }

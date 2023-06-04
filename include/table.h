@@ -5,21 +5,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "utilities.h"
 #include "pager.h"
 #include "row.h"
 #include "table.fwd.h"
 
-typedef struct _table
-{
-    pager* pager; 
-    uint32_t root_page_index;
-
-} table;
-
-typedef struct _cursor cursor;
-
 table* table_db_open(const char* filename);
 void table_db_close(table* table);
+
+bool table_db_is_empty(table* table);
+
+string_buffer table_print_btree(table* table);
 
 void table_init_root(table* table);
 void table_find_root(table* table);

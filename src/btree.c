@@ -1,6 +1,7 @@
 #include "btree.h"
 #include "pager.h"
 #include "row.h"
+#include "table.def.h"
 #include "table.h"
 
 #include <stdbool.h>

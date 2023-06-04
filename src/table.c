@@ -1,18 +1,12 @@
 #include "btree.h"
+#include "table.def.h"
 #include "table.h"
+#include "pager.def.h"
 #include "pager.h"
 
 #include <stdlib.h>
 #include<stdio.h>
 #include <unistd.h>
-
-typedef struct _cursor
-{
-    table *m_table;
-    void *m_leaf_node;
-    uint32_t m_row_index;
-    bool m_end_of_table;
-} cursor;
 
 /*** private ***/
 
@@ -70,6 +64,16 @@ void table_db_close(table* table)
 
     free(table->pager);
     free(table);
+}
+
+bool table_db_is_empty(table *table)
+{
+    return table->pager->file_length == 0 && pager_is_empty(table->pager);
+}
+
+string_buffer table_print_btree(table *table)
+{
+    return btree_print_tree(pager_get_valid_page_ensure(table->pager, table->root_page_index), table->pager);
 }
 
 void table_find_root(table *table)
