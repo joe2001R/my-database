@@ -37,7 +37,7 @@ void table_db_close(table* table)
         free(table->pager->pages[i]);
     }
 
-    ENSURE(table_db_close, close(table->pager->fd) == 0, "error closing the file");
+    ENSURE(close(table->pager->fd) == 0, "error closing the file");
 
     free(table->pager);
     free(table);
@@ -57,7 +57,7 @@ void table_find_root(table *table)
 {
     table->root_page_index = ROOT_NODE_PAGE_INDEX;
 
-    ENSURE(table_find_root, node_is_root(pager_get_valid_page_ensure(table->pager, ROOT_NODE_PAGE_INDEX)), "Error: node in page index %d is not root node", ROOT_NODE_PAGE_INDEX);
+    ENSURE(node_is_root(pager_get_valid_page_ensure(table->pager, ROOT_NODE_PAGE_INDEX)), "Error: node in page index %d is not root node", ROOT_NODE_PAGE_INDEX);
 }
 
 void table_init_root(table *table)
@@ -148,7 +148,7 @@ void table_db_insert(table *table, uint32_t key, row *row_to_insert)
     
     LeafNodeRowPair leaf_node_row_pair = find_row(root_node,key,NULL,table->pager);
 
-    ENSURE(table_db_insert, leaf_node_row_pair.node != NULL, "Error: could not find corresponding leaf node");
+    ENSURE(leaf_node_row_pair.node != NULL, "Error: could not find corresponding leaf node");
 
     void* serialized_row = Malloc(ROW_SIZE);
     row_serialize(serialized_row, row_to_insert);

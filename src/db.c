@@ -27,8 +27,8 @@ int main(int argc, char** argv)
             statement m_statement;
             PrepareResult m_prepare_result = prepare_statement(&buffer, &m_statement);
 
-            ENSURE(main, m_prepare_result == PREPARE_SUCCESS, "could not prepare statement successfully: error : %d", m_prepare_result);
-            ENSURE(main,execute_statement(&m_statement, m_table) == EXECUTE_SUCCESS, "could not execute statement");
+            ENSURE(m_prepare_result == PREPARE_SUCCESS, "could not prepare statement successfully: error : %d", m_prepare_result);
+            ENSURE(execute_statement(&m_statement, m_table) == EXECUTE_SUCCESS, "could not execute statement");
         }
 
         string_buffer_destroy(&buffer);

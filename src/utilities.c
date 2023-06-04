@@ -25,7 +25,7 @@ void ensure(bool condition, const char *error_message, ...)
 void* Malloc(size_t size)
 {
     void* ptr = malloc(size);
-    ENSURE(Malloc, ptr != NULL, "error: could not allocate %ld bytes in heap", size);
+    ENSURE(ptr != NULL, "error: could not allocate %ld bytes in heap", size);
 
     return ptr;
 }
@@ -48,7 +48,7 @@ void string_buffer_destroy(string_buffer *buffer)
 void string_buffer_read(string_buffer *buffer)
 {
     ssize_t bytes_read = getline(&buffer->string, &buffer->buffer_capacity, stdin);
-    ENSURE(string_buffer_read, bytes_read > 0, "unsuccessful `getline`");
+    ENSURE(bytes_read > 0, "unsuccessful `getline`");
 
     buffer->buffer_size = bytes_read - 1;
     buffer->string[bytes_read - 1] = '\0';
@@ -56,7 +56,7 @@ void string_buffer_read(string_buffer *buffer)
 
 void string_buffer_store(string_buffer *buffer, const char *string)
 {
-    ENSURE(string_buffer_store, string != NULL, "error: storing an empty string into a string_buffer");
+    ENSURE(string != NULL, "error: storing an empty string into a string_buffer");
     string_buffer_destroy(buffer);
 
     buffer->string = strdup(string);
@@ -80,7 +80,7 @@ void string_buffer_append(string_buffer *buffer, const char *string)
         buffer->string[0]='\0';
     }
 
-    ENSURE(string_buffer_append, buffer->string != NULL, "Error: not enough memory to realloc");
+    ENSURE(buffer->string != NULL, "Error: not enough memory to realloc");
 
     buffer->buffer_size = new_buffer_size;
     buffer->buffer_capacity = MAX(new_buffer_size + 1, buffer->buffer_capacity);
@@ -96,7 +96,7 @@ void string_buffer_append2(string_buffer *buffer, const char *format, ...)
     ssize_t size = vsnprintf(NULL,0,format,args);
     va_end(args);
 
-    ENSURE(string_buffer_append2,size>0,"Error:  unsuccessful vsnprintf call");
+    ENSURE(size>0,"Error:  unsuccessful vsnprintf call");
 
     char* temp_str = (char*)Malloc(size + 1);
 
@@ -133,7 +133,7 @@ void id_vector_push_back(id_vector *this, uint32_t id)
 
 uint32_t id_vector_read(id_vector *this, uint32_t at)
 {
-    ENSURE(id_vector_read, at < this->size, "error - out of bounds read : size = %d , at = %d", this->size, at);
+    ENSURE(at < this->size, "error - out of bounds read : size = %d , at = %d", this->size, at);
 
     return this->array[at];
 }
