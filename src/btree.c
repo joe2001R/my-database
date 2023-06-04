@@ -10,22 +10,47 @@
 #include <string.h>
 #include <sys/param.h>
 
-uint8_t* node_get_is_root(void* node)
+//private functions
+
+static uint32_t *leaf_node_get_right_child(void *node)
 {
-    return (uint8_t*)(node + IS_ROOT_OFFSET);
+    return (uint32_t *)(node + LEAF_NODE_RIGHT_CHILD_OFFSET);
 }
 
-uint32_t *node_get_parent(void *node)
+static uint32_t *leaf_node_get_num_records(void *node)
+{
+    return (uint32_t *)(node + LEAF_NODE_NUM_RECORDS_OFFSET);
+}
+
+static uint32_t *internal_node_get_child(void *node, uint32_t index)
+{
+    return (uint32_t *)(node + INTERNAL_NODE_BODY_OFFSET + (INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE) * index + INTERNAL_NODE_CHILD_REL_OFFSET);
+}
+
+static uint32_t *internal_node_get_key(void *node, uint32_t index)
+{
+    return (uint32_t *)(node + INTERNAL_NODE_BODY_OFFSET + (INTERNAL_NODE_KEY_SIZE + INTERNAL_NODE_CHILD_SIZE) * index + INTERNAL_NODE_KEY_REL_OFFSET);
+}
+
+static uint32_t *internal_node_get_num_keys(void *node)
+{
+    return (uint32_t *)(node + INTERNAL_NODE_NUM_KEYS_OFFSET);
+}
+
+static uint32_t *node_get_parent(void *node)
 {
     return (uint32_t *)(node + PARENT_NODE_OFFSET);
 }
 
-NodeType *node_get_type(void *node)
+static uint8_t *node_get_is_root(void *node)
 {
-    return (NodeType*)(node + NODE_TYPE_OFFSET);
+    return (uint8_t *)(node + IS_ROOT_OFFSET);
 }
 
-//private functions
+static NodeType *node_get_type(void *node)
+{
+    return (NodeType *)(node + NODE_TYPE_OFFSET);
+}
 
 static void leaf_node_init(void* node)
 {
@@ -48,6 +73,11 @@ static void* internal_node_pager_get_right_child(void* node,pager* pager)
 static void* leaf_node_get_record(void* node,uint32_t index)
 {
     return (node + LEAF_NODE_BODY_OFFSET + index*LEAF_NODE_RECORD_SIZE);
+}
+
+static void *leaf_node_get_row(void *node, uint32_t index)
+{
+    return leaf_node_get_record(node, index) + LEAF_NODE_ROW_REL_OFFSET;
 }
 
 static uint32_t* leaf_node_get_key(void* node,uint32_t index)
@@ -103,6 +133,13 @@ static uint32_t internal_node_child_index_lower_bound(void *node, uint32_t key)
     }
 
     return lower;
+}
+
+static void *internal_node_find_node(void *internal_node, uint32_t key, pager *pager)
+{
+    uint32_t child_index = internal_node_child_index_lower_bound(internal_node, key);
+
+    return internal_node_pager_get_child(internal_node, child_index, pager);
 }
 
 static uint32_t leaf_node_get_max_key(void* node)
@@ -169,6 +206,8 @@ static void internal_node_root_init(void *node, void *node_1, void *node_2, tabl
 
 }
 
+static void internal_node_insert_node(void *internal_node, void *node_to_insert, table *table);
+
 static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *row_to_insert, table *table)
 {
     ensure(*node_get_type(old_leaf_node) == LEAF_NODE, "Error: split and insert applies only for the root leaf node\n");
@@ -225,6 +264,26 @@ static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *r
     *leaf_node_get_right_child(new_leaf_node_1) = pager_get_page_id(table->pager, new_leaf_node_2);
 
     DESTROY(new_record);
+}
+
+static void *leaf_node_find_row(void *node, uint32_t key, uint32_t *row_index)
+{
+    uint32_t num_records = *leaf_node_get_num_records(node);
+
+    uint32_t lower_bound_index = leaf_node_lower_bound(node, key);
+    uint32_t lower_bound_key = *leaf_node_get_key(node, lower_bound_index);
+
+    if (lower_bound_index >= num_records || lower_bound_key != key)
+    {
+        return NULL;
+    }
+
+    if (row_index != NULL)
+    {
+        *row_index = lower_bound_index;
+    }
+
+    return leaf_node_get_row(node, lower_bound_index);
 }
 
 static string_buffer get_cumulated_padding(const char* padding, size_t level)
@@ -396,7 +455,50 @@ static void internal_node_split_and_insert_node(void *old_internal_node, void *n
 
 }
 
+static void internal_node_insert_node(void *internal_node, void *node_to_insert, table *table)
+{
+    // scan keys: lower bound
+    uint32_t child_index = internal_node_child_index_lower_bound(internal_node, node_get_node_key(node_to_insert, table->pager));
+
+    uint32_t node_page_index = pager_get_page_id(table->pager, node_to_insert);
+
+    if (*internal_node_get_num_keys(internal_node) == INTERNAL_NODE_MAX_NUM_KEYS)
+    {
+        return internal_node_split_and_insert_node(internal_node, node_to_insert, table);
+    }
+
+    // edge case: node_to_insert is to be ordered after internal_node's right child
+    if (node_get_node_key(node_to_insert, table->pager) > node_get_node_key(internal_node_pager_get_right_child(internal_node, table->pager), table->pager))
+    {
+        child_index += 1;
+    }
+
+    *internal_node_get_num_keys(internal_node) = *internal_node_get_num_keys(internal_node) + 1;
+
+    // move children
+    for (int i = *internal_node_get_num_keys(internal_node); i > child_index; i--)
+    {
+        memcpy(internal_node_get_child(internal_node, i), internal_node_get_child(internal_node, i - 1), INTERNAL_NODE_CHILD_SIZE);
+    }
+
+    memcpy(internal_node_get_child(internal_node, child_index), &node_page_index, INTERNAL_NODE_CHILD_SIZE);
+
+    // update keys
+
+    for (int i = MIN(child_index, *internal_node_get_num_keys(internal_node) - 1); i < *internal_node_get_num_keys(internal_node); i++)
+    {
+        *internal_node_get_key(internal_node, i) = node_get_node_key(internal_node_pager_get_child(internal_node, i, table->pager), table->pager);
+    }
+
+    *node_get_parent(node_to_insert) = pager_get_page_id(table->pager, internal_node);
+}
+
 /*** ------------------------------------------------------------- ***/
+
+bool node_is_root(void *node)
+{
+    return *node_get_is_root(node);
+}
 
 string_buffer btree_print_tree(void* root_node,pager* pager)
 {
@@ -437,41 +539,6 @@ string_buffer btree_get_diagnostics()
     return buf;
 }
 
-void* leaf_node_get_row(void *node, uint32_t index)
-{
-    return leaf_node_get_record(node, index) + LEAF_NODE_ROW_REL_OFFSET;
-}
-
-uint32_t *leaf_node_get_num_records(void *node)
-{
-    return (uint32_t*)(node + LEAF_NODE_NUM_RECORDS_OFFSET);
-}
-
-uint32_t *leaf_node_get_right_child(void *node)
-{
-    return (uint32_t *)(node + LEAF_NODE_RIGHT_CHILD_OFFSET);
-}
-
-void *leaf_node_find_row(void *node, uint32_t key, uint32_t *row_index)
-{
-    uint32_t num_records = *leaf_node_get_num_records(node);
-
-    uint32_t lower_bound_index = leaf_node_lower_bound(node,key);
-    uint32_t lower_bound_key = *leaf_node_get_key(node, lower_bound_index);
-
-    if( lower_bound_index>=num_records || lower_bound_key != key)
-    {
-        return NULL;
-    }
-
-    if(row_index != NULL)
-    {
-        *row_index = lower_bound_index;
-    }
-
-    return leaf_node_get_row(node,lower_bound_index);
-}
-
 void leaf_node_insert_row(void* node, uint32_t key, void* row_to_insert,table* table)
 {
     ensure(leaf_node_find_row(node,key,NULL)==NULL,"Error: key %d already exists.\n",key);
@@ -502,63 +569,44 @@ void leaf_node_root_init(void *node)
     *node_get_is_root(node) = true;
 }
 
-uint32_t *internal_node_get_num_keys(void *node)
+bool node_is_leaf_node(void *node)
 {
-    return (uint32_t*)(node + INTERNAL_NODE_NUM_KEYS_OFFSET);
+    return *node_get_type(node) == LEAF_NODE;
 }
 
-uint32_t *internal_node_get_key(void *node, uint32_t index)
+bool node_is_internal_node(void *node)
 {
-    return (uint32_t*)(node + INTERNAL_NODE_BODY_OFFSET + (INTERNAL_NODE_KEY_SIZE + INTERNAL_NODE_CHILD_SIZE)*index + INTERNAL_NODE_KEY_REL_OFFSET);
+    return *node_get_type(node) == INTERNAL_NODE;
 }
 
-uint32_t *internal_node_get_child(void *node, uint32_t index)
+LeafNodeRowPair find_row(void *node, uint32_t key, uint32_t *row_index, pager *pager)
 {
-    return (uint32_t*)(node + INTERNAL_NODE_BODY_OFFSET + (INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE)*index +  INTERNAL_NODE_CHILD_REL_OFFSET );
-}
-
-void internal_node_insert_node(void *internal_node, void *node_to_insert,table* table)
-{
-    // scan keys: lower bound
-    uint32_t child_index = internal_node_child_index_lower_bound(internal_node, node_get_node_key(node_to_insert,table->pager));
-
-    uint32_t node_page_index = pager_get_page_id(table->pager,node_to_insert);
-
-    if(*internal_node_get_num_keys(internal_node)==INTERNAL_NODE_MAX_NUM_KEYS)
+    if (node_is_leaf_node(node))
     {
-        return internal_node_split_and_insert_node(internal_node,node_to_insert,table);
+        LeafNodeRowPair leaf_node_row_pair = {node, leaf_node_find_row(node, key, row_index)};
+        return leaf_node_row_pair;
     }
 
-    //edge case: node_to_insert is to be ordered after internal_node's right child
-    if (node_get_node_key(node_to_insert, table->pager) > node_get_node_key(internal_node_pager_get_right_child(internal_node, table->pager),table->pager))
+    else if (node_is_internal_node(node))
     {
-        child_index +=1;
+        return find_row(internal_node_find_node(node, key, pager), key, row_index, pager);
     }
 
-    *internal_node_get_num_keys(internal_node) = *internal_node_get_num_keys(internal_node) + 1;
-
-    // move children
-    for (int i = *internal_node_get_num_keys(internal_node); i > child_index; i--)
-    {
-        memcpy(internal_node_get_child(internal_node, i), internal_node_get_child(internal_node, i - 1), INTERNAL_NODE_CHILD_SIZE);
-    }
-
-    memcpy(internal_node_get_child(internal_node, child_index), &node_page_index, INTERNAL_NODE_CHILD_SIZE);
- 
-    //update keys
-
-    for (int i = MIN(child_index,*internal_node_get_num_keys(internal_node)-1);i<*internal_node_get_num_keys(internal_node);i++)
-    {
-        *internal_node_get_key(internal_node,i) = node_get_node_key(internal_node_pager_get_child(internal_node,i,table->pager),table->pager);
-    }
-
-    *node_get_parent(node_to_insert) = pager_get_page_id(table->pager,internal_node);
+    fprintf(stderr, "Invalid node type in `find_row` call\n");
+    exit(EXIT_FAILURE);
 }
 
-void *internal_node_find_node(void *internal_node, uint32_t key, pager *pager)
+uint32_t leaf_node_read_num_records(void *node)
 {
-    uint32_t child_index = internal_node_child_index_lower_bound(internal_node,key);
-
-    return internal_node_pager_get_child(internal_node,child_index,pager);
+    return *leaf_node_get_num_records(node);
 }
 
+uint32_t leaf_node_read_right_child(void *node)
+{
+    return *leaf_node_get_right_child(node);
+}
+
+const void *leaf_node_read_row(void *node, uint32_t index)
+{
+    return leaf_node_get_row(node,index);
+}

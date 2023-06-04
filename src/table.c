@@ -12,29 +12,6 @@
 
 #define ROOT_NODE_PAGE_INDEX 0
 
-typedef struct _LeafNodeRowPair
-{
-    void* node;
-    void* row;
-} LeafNodeRowPair;
-
-static LeafNodeRowPair find_row(void *node, uint32_t key, uint32_t *row_index, pager *pager)
-{
-    if(*node_get_type(node)==LEAF_NODE)
-    {
-        LeafNodeRowPair leaf_node_row_pair = {node, leaf_node_find_row(node, key, row_index)};
-        return leaf_node_row_pair;
-    }
-
-    else if(*node_get_type(node)==INTERNAL_NODE)
-    {
-        return find_row(internal_node_find_node(node,key,pager),key,row_index,pager);
-    }
-    
-    fprintf(stderr,"Invalid node type in `find_row` call\n");
-    exit(EXIT_FAILURE);
-}
-
 /***********************************************/
 
 table *table_db_open(const char *filename)
@@ -80,7 +57,7 @@ void table_find_root(table *table)
 {
     table->root_page_index = ROOT_NODE_PAGE_INDEX;
 
-    ensure(*node_get_is_root(pager_get_valid_page_ensure(table->pager,ROOT_NODE_PAGE_INDEX)),"Error: node in page index %d is not root node\n",ROOT_NODE_PAGE_INDEX);
+    ensure(node_is_root(pager_get_valid_page_ensure(table->pager,ROOT_NODE_PAGE_INDEX)),"Error: node in page index %d is not root node\n",ROOT_NODE_PAGE_INDEX);
 }
 
 void table_init_root(table *table)
@@ -117,9 +94,9 @@ cursor* table_db_find(table *table, uint32_t id)
     return returned_cursor; 
 }
 
-void* cursor_read(cursor *cursor)
+const void* cursor_read(cursor *cursor)
 {
-    return leaf_node_get_row(cursor->m_leaf_node,cursor->m_row_index);
+    return leaf_node_read_row(cursor->m_leaf_node,cursor->m_row_index);
 }
 
 cursor* table_db_begin(table *table)
@@ -137,26 +114,26 @@ cursor* table_db_begin(table *table)
     returned_cursor->m_table = table;
     returned_cursor->m_leaf_node = leaf_node_row_pair.node;
     returned_cursor->m_row_index=0;
-    returned_cursor->m_end_of_table = (*leaf_node_get_num_records(leaf_node_row_pair.node) == 0);
+    returned_cursor->m_end_of_table = (leaf_node_read_num_records(leaf_node_row_pair.node) == 0);
 
     return returned_cursor;
 }
 
 void cursor_advance(cursor *cursor)
 {
-    if(cursor->m_row_index + 1 < *leaf_node_get_num_records(cursor->m_leaf_node))
+    if (cursor->m_row_index + 1 < leaf_node_read_num_records(cursor->m_leaf_node))
     {
         cursor->m_row_index++;
         return;
     }
 
-    if(*leaf_node_get_right_child(cursor->m_leaf_node) == 0)
+    if(leaf_node_read_right_child(cursor->m_leaf_node) == 0)
     {
         cursor->m_end_of_table = true;
         return;
     }
 
-    cursor->m_leaf_node = pager_get_valid_page_ensure(cursor->m_table->pager,*leaf_node_get_right_child(cursor->m_leaf_node));
+    cursor->m_leaf_node = pager_get_valid_page_ensure(cursor->m_table->pager,leaf_node_read_right_child(cursor->m_leaf_node));
     cursor->m_row_index = 0;
 }
 

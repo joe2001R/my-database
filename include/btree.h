@@ -15,6 +15,12 @@ typedef enum
     INTERNAL_NODE
 } NodeType;
 
+typedef struct _LeafNodeRowPair
+{
+    void *node;
+    void *row;
+} LeafNodeRowPair;
+
 //common nodes header
 
 #define COMMON_HEADER_OFFSET 0
@@ -28,9 +34,9 @@ typedef enum
 
 #define COMMON_HEADER_SIZE (IS_ROOT_SIZE + PARENT_NODE_SIZE + NODE_TYPE_SIZE)
 
-uint8_t *node_get_is_root(void *node);
-uint32_t *node_get_parent(void *node);
-NodeType *node_get_type(void* node);
+bool node_is_root(void* node);
+bool node_is_leaf_node(void* node);
+bool node_is_internal_node(void* node);
 
 //leaf nodes header
 
@@ -63,14 +69,13 @@ static_assert(LEAF_NODE_MAX_NUM_RECORDS > 0, "leaf's node maximum number of reco
 string_buffer btree_get_diagnostics();
 string_buffer btree_print_tree(void* root_node,pager* pager);
 
-uint32_t* leaf_node_get_num_records(void* node);
-uint32_t* leaf_node_get_right_child(void* node);
+uint32_t leaf_node_read_num_records(void* node);
+uint32_t leaf_node_read_right_child(void* node);
 
 void leaf_node_root_init(void* node);
 
-void *leaf_node_get_row(void *node, uint32_t index);
+const void* leaf_node_read_row(void *node, uint32_t index);
 
-void *leaf_node_find_row(void *node, uint32_t key, uint32_t *row_index);
 void leaf_node_insert_row(void* node,uint32_t key,void* row_to_insert,table* table);
 
 // internal node header
@@ -100,11 +105,6 @@ void leaf_node_insert_row(void* node,uint32_t key,void* row_to_insert,table* tab
 
 static_assert(INTERNAL_NODE_MAX_NUM_KEYS > 0, "internal nodes 's maximum number of keys is less than or equal to 0");
 
-uint32_t* internal_node_get_num_keys(void* node);
-uint32_t* internal_node_get_key(void* node,uint32_t index);
-uint32_t* internal_node_get_child(void* node,uint32_t index);
-
-void internal_node_insert_node(void* internal_node,void* node_to_insert,table* table);
-void* internal_node_find_node(void* internal_node,uint32_t key,pager* pager);
+LeafNodeRowPair find_row(void *node, uint32_t key, uint32_t *row_index, pager *pager);
 
 #endif

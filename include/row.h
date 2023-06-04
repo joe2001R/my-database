@@ -14,8 +14,8 @@ typedef struct _row
     char name[NAME_MAX_LENGTH + 1];
 } row;
   
-void row_serialize(void *destination, row *source);
-void row_deserialize(row *destination, void *source);
+void row_serialize(void *destination,const row *source);
+void row_deserialize(row *destination, const void *source);
 
 #define ID_OFFSET (0)
 #define ID_SIZE (SIZE_OF(row,id))
