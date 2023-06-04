@@ -71,8 +71,6 @@ describe 'database' do
         end
         result = run_script(["select *",".exit"])
 
-        `mv test.db joetest.db`
-
         expect(result).to match_array(expected_output)
     end
 
