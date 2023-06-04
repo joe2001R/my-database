@@ -223,7 +223,7 @@ static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *r
 
     *leaf_node_get_right_child(new_leaf_node_1) = pager_get_page_id(table->pager, new_leaf_node_2);
 
-    destroy(&new_record);
+    DESTROY(new_record);
 }
 
 static string_buffer get_cumulated_padding(const char* padding, size_t level)
@@ -380,7 +380,7 @@ static void internal_node_split_and_insert_node(void *old_internal_node, void *n
     internal_node_update_parent(new_internal_node_2,table->pager);
 
     memcpy(old_internal_node, new_internal_node_1, PAGE_SIZE);
-    destroy(&new_internal_node_1);
+    DESTROY(new_internal_node_1);
 
     //edge case: old_internal_node was the root node - we find a reference to the root node using the table
     if(*node_get_is_root(old_internal_node))

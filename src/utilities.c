@@ -106,7 +106,7 @@ void string_buffer_append2(string_buffer *buffer, const char *format, ...)
 
     string_buffer_append(buffer,temp_str);
 
-    destroy(&temp_str);
+    DESTROY(temp_str);
 }
 
 void id_vector_init(id_vector *this)
@@ -140,7 +140,7 @@ uint32_t id_vector_read(id_vector *this, uint32_t at)
 
 void id_vector_destroy(id_vector *this)
 {
-    destroy((void**)&this->array);
+    DESTROY(this->array);
 }
 
 void destroy(void **ptr)

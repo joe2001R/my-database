@@ -113,5 +113,5 @@ void pager_destroy_page(pager *pager, uint32_t id)
         pager->num_pages = pager->num_pages - 1;
     }
     
-    destroy(&pager->pages[id]);
+    DESTROY(pager->pages[id]);
 }

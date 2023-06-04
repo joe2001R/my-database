@@ -16,13 +16,7 @@ typedef struct _table
 
 } table;
 
-typedef struct _cursor
-{
-    table* m_table;
-    void* m_leaf_node;
-    uint32_t m_row_index;
-    bool m_end_of_table;
-} cursor;
+typedef struct _cursor cursor;
 
 table* table_db_open(const char* filename);
 void table_db_close(table* table);

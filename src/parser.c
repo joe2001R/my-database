@@ -34,7 +34,7 @@ static ExecuteResult execute_select_all(table *table)
         cursor_advance(cursor);
     }
 
-    destroy((void**)&cursor);
+    DESTROY(cursor);
 
     return EXECUTE_SUCCESS;
 }
@@ -54,7 +54,7 @@ static ExecuteResult execute_select_subset(statement* statement,table* table)
 
         row_deserialize(&row_to_display, cursor_read(cursor));
 
-        destroy((void **)&cursor);
+        DESTROY(cursor);
 
         print_row(&row_to_display);
     }
@@ -131,7 +131,7 @@ PrepareResult prepare_select(string_buffer *buffer, statement *statement)
     }
 
     statement->select_all = false;
-    
+
     id_vector_init(&statement->selected_ids);
 
     while(id)

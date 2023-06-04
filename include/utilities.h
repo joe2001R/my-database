@@ -11,6 +11,8 @@ void ensure(bool condition,const char* error_message, ...);
 void* Malloc(size_t size);
 void destroy(void** ptr);
 
+#define DESTROY(var) destroy((void**)&var)
+
 typedef struct
 {
     size_t buffer_size;

@@ -6,17 +6,23 @@
 #include<stdio.h>
 #include <unistd.h>
 
+typedef struct _cursor
+{
+    table *m_table;
+    void *m_leaf_node;
+    uint32_t m_row_index;
+    bool m_end_of_table;
+} cursor;
+
 /*** private ***/
 
 #define ROOT_NODE_PAGE_INDEX 0
 
-static struct _LeafNodeRowPair
+typedef struct _LeafNodeRowPair
 {
     void* node;
     void* row;
-};
-
-typedef struct _LeafNodeRowPair LeafNodeRowPair;
+} LeafNodeRowPair;
 
 static LeafNodeRowPair find_row(void *node, uint32_t key, uint32_t *row_index, pager *pager)
 {
@@ -168,5 +174,5 @@ void table_db_insert(table *table, uint32_t key, row *row_to_insert)
 
     leaf_node_insert_row(leaf_node_row_pair.node,key,serialized_row,table);
 
-    destroy(&serialized_row);
+    DESTROY(serialized_row);
 }
