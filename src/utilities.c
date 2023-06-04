@@ -9,6 +9,39 @@
 
 #include "utilities.h"
 
+/*** private functions ***/
+
+static void vector_init(void **array, uint32_t *capacity, uint32_t *size)
+{
+    *array = Malloc(sizeof(uint32_t));
+    *capacity = 1;
+    *size = 0;
+}
+
+static void vector_push_back(void **array, uint32_t *capacity, uint32_t *size, void *element, uint32_t element_size)
+{
+    if (*capacity == *size)
+    {
+        void *new_array = Malloc(*capacity * element_size * 2);
+        memcpy(new_array, *array, *capacity * element_size);
+        free(*array);
+
+        *array = new_array;
+    }
+
+    memcpy(*array + *size * element_size, element, element_size);
+    *size = *size + 1;
+}
+
+static void vector_read(const void **array, uint32_t *size, uint32_t at, void *store_element, uint32_t element_size)
+{
+    ENSURE(at < *size, "error - out of bounds read : size = %d , at = %d", *size, at);
+
+    memcpy(store_element, *array + at * element_size, element_size);
+}
+
+/***********************************************************/
+
 void ensure(bool condition, const char *error_message, ...)
 {
     va_list args;
@@ -111,31 +144,21 @@ void string_buffer_append2(string_buffer *buffer, const char *format, ...)
 
 void id_vector_init(id_vector *this)
 {
-    this->array = Malloc(sizeof(uint32_t));
-    this->capacity = 1;
-    this->size = 0;
+    vector_init((void**)&this->array,&this->capacity,&this->size);
 }
 
 void id_vector_push_back(id_vector *this, uint32_t id)
 {
-    if(this->capacity == this->size)
-    {
-        uint32_t* new_array = Malloc(this->capacity * sizeof(uint32_t) * 2);
-        memcpy(new_array,this->array,this->capacity * sizeof(uint32_t));
-        free(this->array);
-        
-        this->array = new_array;
-    }
-
-    *(this->array + this->size)=id;
-    this->size++;
+    vector_push_back((void **)&this->array, &this->capacity, &this->size, (void*)&id, sizeof(uint32_t));
 }
 
 uint32_t id_vector_read(id_vector *this, uint32_t at)
 {
-    ENSURE(at < this->size, "error - out of bounds read : size = %d , at = %d", this->size, at);
+    uint32_t read_value;
 
-    return this->array[at];
+    vector_read((const void**)&this->array,&this->size,at,&read_value,sizeof(uint32_t));
+
+    return read_value;
 }
 
 void id_vector_destroy(id_vector *this)
