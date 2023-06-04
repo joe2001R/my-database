@@ -85,42 +85,20 @@ static uint32_t* leaf_node_get_key(void* node,uint32_t index)
     return (uint32_t*)(leaf_node_get_record(node,index) + LEAF_NODE_KEY_REL_OFFSET);
 }
 
-static uint32_t leaf_node_lower_bound(void* node,uint32_t key)
+typedef uint32_t*(NumElementsGetter)(void*);
+typedef uint32_t*(KeyGetter)(void*,uint32_t);
+
+static uint32_t node_lower_bound(void* node,uint32_t key,NumElementsGetter num_elements_getter,KeyGetter key_getter)
 {
-    uint32_t num_records = *leaf_node_get_num_records(node);
+    uint32_t num_elements = *num_elements_getter(node);
 
-    uint32_t upper = num_records;
-    uint32_t lower = 0;
-
-    while(upper > lower)
-    {
-        uint32_t mid = (upper + lower) / 2;
-        uint32_t key_at_mid = *leaf_node_get_key(node,mid);
-        
-        if(key_at_mid >= key)
-        {
-            upper = mid;
-        }
-        else
-        {
-            lower = mid + 1;
-        }
-    }
-
-    return lower;
-}
-
-static uint32_t internal_node_child_index_lower_bound(void *node, uint32_t key)
-{
-    uint32_t num_keys = *internal_node_get_num_keys(node);
-
-    uint32_t upper = num_keys;
+    uint32_t upper = num_elements;
     uint32_t lower = 0;
 
     while (upper > lower)
     {
         uint32_t mid = (upper + lower) / 2;
-        uint32_t key_at_mid = *internal_node_get_key(node, mid);
+        uint32_t key_at_mid = *key_getter(node, mid);
 
         if (key_at_mid >= key)
         {
@@ -133,6 +111,16 @@ static uint32_t internal_node_child_index_lower_bound(void *node, uint32_t key)
     }
 
     return lower;
+}
+
+static uint32_t leaf_node_lower_bound(void* node,uint32_t key)
+{
+    return node_lower_bound(node,key,leaf_node_get_num_records,leaf_node_get_key);
+}
+
+static uint32_t internal_node_child_index_lower_bound(void *node, uint32_t key)
+{
+    return node_lower_bound(node,key,internal_node_get_num_keys,internal_node_get_key);
 }
 
 static void *internal_node_find_node(void *internal_node, uint32_t key, pager *pager)
@@ -212,7 +200,7 @@ static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *r
 {
     ensure(*node_get_type(old_leaf_node) == LEAF_NODE, "Error: split and insert applies only for the root leaf node\n");
 
-    void *new_leaf_node_1 = pager_get_free_page(table->pager);
+    void *new_leaf_node_1 = Malloc(PAGE_SIZE);
     void *new_leaf_node_2 = pager_get_free_page(table->pager);
 
     leaf_node_init(new_leaf_node_1);
@@ -238,19 +226,21 @@ static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *r
     
     if(*node_get_is_root(old_leaf_node))
     {
-        internal_node_root_init(old_leaf_node, new_leaf_node_1, new_leaf_node_2, table);
+        void* pager_new_leaf_node_1 = pager_get_free_page(table->pager);
+        memcpy(pager_new_leaf_node_1,new_leaf_node_1,PAGE_SIZE);
+
+        internal_node_root_init(old_leaf_node, pager_new_leaf_node_1, new_leaf_node_2, table);
+
+        DESTROY(new_leaf_node_1);
+        new_leaf_node_1 = pager_new_leaf_node_1;
     }
     else
     {   
         *node_get_parent(new_leaf_node_1) = *node_get_parent(old_leaf_node);
 
-        uint32_t new_leaf_node_2_page_id = pager_get_page_id(table->pager,new_leaf_node_2);
-
         memcpy(old_leaf_node,new_leaf_node_1,PAGE_SIZE);
-        memcpy(new_leaf_node_1,new_leaf_node_2,PAGE_SIZE);
-        pager_destroy_page(table->pager, new_leaf_node_2_page_id);
-
-        new_leaf_node_2 = new_leaf_node_1; //!! dangling pointer
+        
+        DESTROY(new_leaf_node_1);
         new_leaf_node_1 = old_leaf_node;
 
         void* internal_node = pager_get_valid_page_ensure(table->pager, *node_get_parent(new_leaf_node_1));
