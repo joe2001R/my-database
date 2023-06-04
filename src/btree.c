@@ -142,6 +142,7 @@ static uint32_t pager_get_page_id(pager* pager,void* page)
 static void internal_node_init(void* node,uint32_t parent_node_id)
 {
     *node_get_type(node) = INTERNAL_NODE;
+    *node_get_is_root(node) = false;
     *node_get_parent(node) = parent_node_id;
 }
 
@@ -326,6 +327,7 @@ static void internal_node_split_and_insert_node(void *old_internal_node, void *n
     //is root? : 2 new nodes added : 2nd split and root
     if(*node_get_is_root(old_internal_node))
     {
+        *node_get_is_root(new_internal_node_1) = true;
         old_internal_node = pager_get_free_page(table->pager);
         
         memcpy(old_internal_node,pager_get_valid_page_ensure(table->pager,table->root_page_index),PAGE_SIZE);
@@ -385,6 +387,10 @@ static void internal_node_split_and_insert_node(void *old_internal_node, void *n
     {
         *node_get_is_root(old_internal_node) = false;
         internal_node_root_init(pager_get_valid_page_ensure(table->pager,table->root_page_index),old_internal_node,new_internal_node_2,table);
+    }
+    else
+    {
+        internal_node_insert_node(pager_get_valid_page_ensure(table->pager,*node_get_parent(new_internal_node_2)),new_internal_node_2,table);
     }
 
 }

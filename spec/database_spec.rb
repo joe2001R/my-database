@@ -54,7 +54,7 @@ describe 'database' do
         
         insert_input = []
         
-        num_records=65
+        num_records=203
 
         for i in 1..num_records do
             insert_input.push("insert #{i} example#{i}")
@@ -70,6 +70,8 @@ describe 'database' do
             expected_output.push("#{i} example#{i}")
         end
         result = run_script(["select *",".exit"])
+
+        `mv test.db joetest.db`
 
         expect(result).to match_array(expected_output)
     end

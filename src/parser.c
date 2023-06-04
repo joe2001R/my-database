@@ -130,6 +130,8 @@ PrepareResult prepare_select(string_buffer *buffer, statement *statement)
         return PREPARE_SUCCESS;
     }
 
+    statement->select_all = false;
+    
     id_vector_init(&statement->selected_ids);
 
     while(id)
