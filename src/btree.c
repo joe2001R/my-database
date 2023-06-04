@@ -160,7 +160,7 @@ static uint32_t internal_node_get_node_key(void* internal_node,pager* pager)
 static uint32_t pager_get_page_id(pager* pager,void* page)
 {
     int32_t id = pager_find_page_id(pager,page);
-    ensure(id!=-1,"Error: could not find page id in pager\n");
+    ENSURE(pager_get_page_id, id != -1, "Error: could not find page id in pager");
 
     return (uint32_t)id;
 }
@@ -198,7 +198,7 @@ static void internal_node_insert_node(void *internal_node, void *node_to_insert,
 
 static void leaf_node_split_and_insert(void *old_leaf_node, uint32_t key, row *row_to_insert, table *table)
 {
-    ensure(*node_get_type(old_leaf_node) == LEAF_NODE, "Error: split and insert applies only for the root leaf node\n");
+    ENSURE(leaf_node_split_and_insert, *node_get_type(old_leaf_node) == LEAF_NODE, "Error: split and insert called on non leaf node");
 
     void *new_leaf_node_1 = Malloc(PAGE_SIZE);
     void *new_leaf_node_2 = pager_get_free_page(table->pager);
@@ -531,7 +531,7 @@ string_buffer btree_get_diagnostics()
 
 void leaf_node_insert_row(void* node, uint32_t key, void* row_to_insert,table* table)
 {
-    ensure(leaf_node_find_row(node,key,NULL)==NULL,"Error: key %d already exists.\n",key);
+    ENSURE(leaf_node_insert_row, leaf_node_find_row(node, key, NULL) == NULL, "Error: insert already existing key %d", key);
 
     uint32_t* num_records = leaf_node_get_num_records(node);
 

@@ -12,6 +12,7 @@ void* Malloc(size_t size);
 void destroy(void** ptr);
 
 #define DESTROY(var) destroy((void**)&var)
+#define ENSURE(context,condition,err_msg,...) ensure(condition,err_msg " in `%s` call\n",##__VA_ARGS__,#context)
 
 typedef struct
 {

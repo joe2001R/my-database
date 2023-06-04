@@ -21,13 +21,13 @@ static void pager_init(pager* pager)
 pager* pager_open(const char *filename)
 {
     int fd = open(filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
-    ensure(fd != -1, "unable %s to open file in `pager_open`\n",filename);
+    ENSURE(pager_open, fd != -1, "unable to open file %s", filename);
 
     pager *return_value = Malloc(sizeof(pager));
     
     off_t file_length = lseek(fd,0,SEEK_END);
 
-    ensure(file_length%PAGE_SIZE == 0, "invalid file length : PAGE_SIZE (%d) does not evenly divide the opened file's length (%d)\n",PAGE_SIZE,file_length);
+    ENSURE(pager_open, file_length % PAGE_SIZE == 0, "invalid file length : PAGE_SIZE (%d) does not evenly divide the opened file's length (%d)", PAGE_SIZE, file_length);
 
     return_value->fd=fd;
     return_value->file_length = file_length;
@@ -40,7 +40,7 @@ pager* pager_open(const char *filename)
 
 void *pager_get_page(pager *pager, uint32_t id)
 {
-    ensure(id < MAX_PAGE_NO, "invalid page id : page id (%d) is too big\n",id);
+    ENSURE(pager_get_page, id < MAX_PAGE_NO, "invalid page id : page id (%d) is too big", id);
 
     if(pager->pages[id] == NULL)
     {
@@ -49,8 +49,8 @@ void *pager_get_page(pager *pager, uint32_t id)
 
         if( id < file_num_pages)
         {
-            ensure(lseek(pager->fd,id*PAGE_SIZE,SEEK_SET) != -1,"invalid file seek in `pager_get_page`\n");
-            ensure(read(pager->fd,pager->pages[id],PAGE_SIZE) != -1,"could not read from file in `pager_get_page`\n");
+            ENSURE(pager_get_page, lseek(pager->fd, id * PAGE_SIZE, SEEK_SET) != -1, "invalid file seek");
+            ENSURE(pager_get_page,read(pager->fd, pager->pages[id], PAGE_SIZE) != -1, "could not read from file");
         }
 
         if(id >= pager->num_pages)
@@ -77,8 +77,8 @@ void *pager_get_valid_page(pager *pager, uint32_t id)
 void *pager_get_valid_page_ensure(pager *pager, uint32_t id)
 {
     void* page = pager_get_valid_page(pager,id);
-    ensure(page!=NULL,"Error: valid page is NULL in `pager_get_valid_page_ensure` call\n");
-    
+    ENSURE(pager_get_valid_page_ensure, page != NULL, "Error: valid page is NULL");
+
     return page;
 }
 
@@ -102,9 +102,9 @@ int32_t pager_find_page_id(pager *pager, void *page)
 
 void pager_flush(pager *pager, uint32_t id)
 {
-    ensure(pager->pages[id] != NULL, "flushing a null page\n");
-    ensure(lseek(pager->fd, id * PAGE_SIZE, SEEK_SET) != -1, "invalid file seek in `pager_flush`\n");
-    ensure(write(pager->fd, pager->pages[id], PAGE_SIZE) != -1, "could not write to file in `pager_flush`\n");
+    ENSURE(pager_flush, pager->pages[id] != NULL, "flushing a null page");
+    ENSURE(pager_flush,lseek(pager->fd, id * PAGE_SIZE, SEEK_SET) != -1, "invalid file seek");
+    ENSURE(pager_flush,write(pager->fd, pager->pages[id], PAGE_SIZE) != -1, "could not write to file");
 }
 
 void pager_destroy_page(pager *pager, uint32_t id)
