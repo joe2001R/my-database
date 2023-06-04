@@ -38,6 +38,6 @@ test: Gemfile
 clean:
 	-@rm -r $(BUILD_DIR) *.db 2>/dev/null || true
 
-.PHONY: all force clean debug
+.PHONY: all force clean debug test
 
 -include $(DEPS)
