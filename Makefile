@@ -1,30 +1,32 @@
-CC=gcc
-CFLAGS=-Wall $(EFLAGS)
+CC:=gcc
+CFLAGS:=-Wall $(EFLAGS)
 
-IDIR = include
-_DEPS= utilities.h parser.h pager.h row.h table.h btree.h constants.h
-DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+SRC_DIRS := ./src
+BUILD_DIR := ./build
+SRCS := $(shell find $(SRCS_DIRS) -name '*.c')
 
-INC = $(foreach d, $(IDIR), -I$d)
+OBJS := $(SRCS:$(SRC_DIRS)/%.c=$(BUILD_DIR)/%.o)
 
-SDIR = src
+DEPS := $(OBJS:.o=.d)
+INC_DIRS := include
+INC_FLAGS := $(addprefix -I,$(INC_DIRS))
+CPPFLAGS :=$(INC_FLAGS) -MMD -MP
 
-ODIR = obj
-_OBJ = db.o utilities.o parser.o pager.o row.o table.o btree.o
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
-
-LIBS = -lc
+LDFLAGS := -lc
 
 all: db test
 
-$(ODIR): | $(ODIR)
-	mkdir $(ODIR)
+force: clean all
 
-$(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
-	$(CC) $(INC) -c -o $@ $< $(CFLAGS)
+debug:
+	EFLAGS="-g" make force
 
-db: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+$(BUILD_DIR)/%.o: $(SRC_DIRS)/%.c
+	mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+db: $(OBJS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 Gemfile:
 	bundle init
@@ -34,4 +36,8 @@ test: Gemfile
 	bundle exec rspec
 
 clean:
-	rm $(ODIR)/*.o db *.db
+	-@rm -r $(BUILD_DIR) *.db 2>/dev/null || true
+
+.PHONY: all force clean debug
+
+-include $(DEPS)
