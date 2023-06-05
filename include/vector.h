@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-void vector_init(void **array, uint32_t *capacity, uint32_t *size);
+void vector_init(void **array, uint32_t *capacity, uint32_t *size, uint32_t element_size);
 void vector_push_back(void **array, uint32_t *capacity, uint32_t *size, void *element, uint32_t element_size);
 void vector_read(const void **array, uint32_t *size, uint32_t at, void *store_element, uint32_t element_size);
 
@@ -21,7 +21,7 @@ void vector_read(const void **array, uint32_t *size, uint32_t at, void *store_el
 #define VECTOR_OP_DEFINE(prefix,underlying)\
 static void prefix##_vector_init(prefix##_vector* this)\
 {\
-    vector_init((void**)&this->array,&this->capacity,&this->size);\
+    vector_init((void**)&this->array,&this->capacity,&this->size,sizeof(underlying));\
 }\
 \
 static void prefix##_vector_push_back(prefix##_vector* this,underlying element)\

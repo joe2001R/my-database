@@ -12,7 +12,7 @@
         GENERATOR(PREPARE_SUCCESS) \
         GENERATOR(PREPARE_FAILURE) \
         GENERATOR(PREPARE_UNRECOGNIZED) \
-        GENERATOR(PREPARE_INSERT_INVALID_ARGS) \
+        GENERATOR(PREPARE_INSERT_INVALID_ID) \
         GENERATOR(PREPARE_INSERT_STRING_TOO_BIG) \
         GENERATOR(PREPARE_SELECT_BAD_ID) \
 
@@ -22,6 +22,7 @@
 static const char* PREPARE_RESULT_STRING[] = {FOREACH_PREPARE_ENUM(GENERATE_STRING)};
 
 VECTOR_DEF(id, uint32_t)
+VECTOR_DEF(row,row)
 
 typedef enum
 {
@@ -42,7 +43,7 @@ typedef enum
 typedef struct _statement
 {
     StatementType statement_type;
-    row row_to_insert;
+    row_vector rows_to_insert;
     id_vector selected_ids;
     bool select_all;
 } statement; 

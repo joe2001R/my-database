@@ -11,6 +11,7 @@
 //private functions
 
 VECTOR_OP_DEFINE(id, uint32_t)
+VECTOR_OP_DEFINE(row,row)
 
 static void print_row(const row* m_row)
 {
@@ -154,22 +155,36 @@ PrepareResult prepare_insert(string_buffer *buffer, statement *statement)
 {
     statement->statement_type = INSERT_STATEMENT;
     
-    strtok(buffer->string," "); // keyword
-    char* id = strtok(NULL," ");
-    char* name = strtok(NULL," ");
-    
-    if(id == NULL || name == NULL || atoi(id)<0) 
-    {
-        return PREPARE_INSERT_INVALID_ARGS;
-    }
-    
-    if( strlen(name)> NAME_MAX_LENGTH )
-    {
-        return PREPARE_INSERT_STRING_TOO_BIG;
-    }
+    row_vector_init(&statement->rows_to_insert);
 
-    statement->row_to_insert.id = atoi(id);
-    strcpy(statement->row_to_insert.name,name);
+    strtok(buffer->string, " "); // keyword
+
+    while(1)
+    {
+        char* id = strtok(NULL," ");
+        char* name = strtok(NULL," ;");
+    
+        if(id == NULL || name == NULL)
+        {
+            break;
+        }
+        
+        if(atoi(id)<0) 
+        {
+            return PREPARE_INSERT_INVALID_ID;
+        }
+        
+        if( strlen(name)> NAME_MAX_LENGTH )
+        {
+            return PREPARE_INSERT_STRING_TOO_BIG;
+        }
+
+        row read_row;
+        read_row.id = atoi(id);
+        strcpy(read_row.name,name);
+
+        row_vector_push_back(&statement->rows_to_insert,read_row);
+    }
 
     return PREPARE_SUCCESS;
 }
@@ -200,7 +215,14 @@ ExecuteResult execute_insert(statement *statement, table *table)
         table_find_root(table);
     }
 
-    table_db_insert(table,statement->row_to_insert.id,&statement->row_to_insert);
+    for(int i=0;i<statement->rows_to_insert.size;i++)
+    {
+        row row_to_insert = row_vector_read(&statement->rows_to_insert,i);
+
+        table_db_insert(table, row_to_insert.id, &row_to_insert);
+    }
+
+    row_vector_destroy(&statement->rows_to_insert);
 
     return EXECUTE_SUCCESS;
 }

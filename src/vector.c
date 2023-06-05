@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-void vector_init(void **array, uint32_t *capacity, uint32_t *size)
+void vector_init(void **array, uint32_t *capacity, uint32_t *size,uint32_t element_size)
 {
-    *array = Malloc(sizeof(uint32_t));
+    *array = Malloc(element_size);
     *capacity = 1;
     *size = 0;
 }
@@ -20,6 +20,7 @@ void vector_push_back(void **array, uint32_t *capacity, uint32_t *size, void *el
         free(*array);
 
         *array = new_array;
+        *capacity = *capacity * 2;
     }
 
     memcpy(*array + *size * element_size, element, element_size);

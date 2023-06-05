@@ -116,4 +116,13 @@ describe 'database' do
         expect(result).to match_array(expected_output)
     end
 
+    it 'inserts many records in one command' do
+
+        run_script(["insert 100 joe;53 joe;1 joe",".exit"])
+        result = run_script(["select *",".exit"])
+
+        expect(result).to match_array(["db > 1 joe","53 joe","100 joe","db > "])
+
+    end
+
 end
