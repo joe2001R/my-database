@@ -6,6 +6,7 @@
 #include "utilities.h" 
 #include "row.h"
 #include "table.h"
+#include "vector.h"
 
 #define FOREACH_PREPARE_ENUM(GENERATOR) \
         GENERATOR(PREPARE_SUCCESS) \
@@ -19,6 +20,8 @@
 #define GENERATE_STRING(STRING) #STRING,
 
 static const char* PREPARE_RESULT_STRING[] = {FOREACH_PREPARE_ENUM(GENERATE_STRING)};
+
+VECTOR_DEF(id, uint32_t)
 
 typedef enum
 {

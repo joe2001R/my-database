@@ -10,6 +10,8 @@
 
 //private functions
 
+VECTOR_OP_DEFINE(id, uint32_t)
+
 static void print_row(const row* m_row)
 {
     printf("%d %s\n",m_row->id,m_row->name);

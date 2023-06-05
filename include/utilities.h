@@ -28,17 +28,4 @@ void string_buffer_store(string_buffer *buffer, const char *string);
 void string_buffer_append(string_buffer* buffer,const char* string);
 void string_buffer_append2(string_buffer* buffer,const char* format,...);
 
-typedef struct _id_vector
-{
-    uint32_t* array;
-
-    uint32_t size;
-    uint32_t capacity;
-} id_vector;
-
-void        id_vector_init(id_vector* this);
-void        id_vector_push_back(id_vector *this, uint32_t id);
-uint32_t    id_vector_read(id_vector* this,uint32_t at);
-void        id_vector_destroy(id_vector* this);
-
 #endif
