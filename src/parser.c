@@ -162,7 +162,7 @@ PrepareResult prepare_insert(string_buffer *buffer, statement *statement)
     while(1)
     {
         char* id = strtok(NULL," ");
-        char* name = strtok(NULL," ;");
+        char* name = strtok(NULL," ,");
     
         if(id == NULL || name == NULL)
         {
