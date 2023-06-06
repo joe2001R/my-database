@@ -14,7 +14,7 @@ void destroy(void** ptr);
 #define DESTROY(var) destroy((void**)&var)
 #define ENSURE(condition,err_msg,...) ensure(condition,err_msg " in `%s` call\n",##__VA_ARGS__,__FUNCTION__)
 
-typedef struct
+typedef struct _string_buffer
 {
     size_t buffer_size;
     size_t buffer_capacity;

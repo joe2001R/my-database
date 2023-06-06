@@ -12,14 +12,13 @@
 void ensure(bool condition, const char *error_message, ...)
 {
     va_list args;
-    va_start(args, error_message);
     if (condition == false)
     {
+        va_start(args, error_message);
         vfprintf(stderr, error_message, args);
         va_end(args);
         exit(EXIT_FAILURE);
     }
-    va_end(args);
 }
 
 void* Malloc(size_t size)
@@ -41,8 +40,7 @@ void string_buffer_destroy(string_buffer *buffer)
 {
     buffer->buffer_size = 0;
     buffer->buffer_capacity = 0;
-    free(buffer->string);
-    buffer->string = NULL;
+    DESTROY(buffer->string);
 }
 
 void string_buffer_read(string_buffer *buffer)
@@ -74,13 +72,13 @@ void string_buffer_append(string_buffer *buffer, const char *string)
     size_t new_buffer_size = buffer->buffer_size + strlen(string);
 
     buffer->string = realloc(buffer->string,MAX(new_buffer_size+1,buffer->buffer_capacity));
+
+    ENSURE(buffer->string != NULL, "Error: not enough memory to realloc");
     
     if(buffer->buffer_size == 0)
     {
         buffer->string[0]='\0';
     }
-
-    ENSURE(buffer->string != NULL, "Error: not enough memory to realloc");
 
     buffer->buffer_size = new_buffer_size;
     buffer->buffer_capacity = MAX(new_buffer_size + 1, buffer->buffer_capacity);
