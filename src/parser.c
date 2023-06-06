@@ -13,6 +13,22 @@
 VECTOR_OP_DEFINE(id, uint32_t)
 VECTOR_OP_DEFINE(row,row)
 
+typedef struct _select_statement_data
+{
+    bool select_all;
+    id_vector selected_ids;
+} select_statement_data;
+
+typedef struct _insert_statement_Data
+{
+    row_vector rows_to_insert;
+} insert_statement_data;
+
+#define UNPACK(type,vptr) ((type*) vptr)
+
+#define UNPACK_SELECT_DATA(vptr) UNPACK(select_statement_data,vptr)
+#define UNPACK_INSERT_DATA(vptr) UNPACK(insert_statement_data,vptr)
+
 static void print_row(const row* m_row)
 {
     printf("%d %s\n",m_row->id,m_row->name);
@@ -44,11 +60,11 @@ static ExecuteResult execute_select_all(table *table)
 
 static ExecuteResult execute_select_subset(statement* statement,table* table)
 {
-    for (int i = 0; i < statement->selected_ids.size; i++)
+    for (int i = 0; i < UNPACK_SELECT_DATA(statement->statement_data)->selected_ids.size; i++)
     {
         row row_to_display;
 
-        cursor *cursor = table_db_find(table, id_vector_read(&statement->selected_ids, i));
+        cursor *cursor = table_db_find(table, id_vector_read(&UNPACK_SELECT_DATA(statement->statement_data)->selected_ids, i));
 
         if (cursor == NULL)
         {
@@ -62,7 +78,7 @@ static ExecuteResult execute_select_subset(statement* statement,table* table)
         print_row(&row_to_display);
     }
 
-    id_vector_destroy(&statement->selected_ids);
+    id_vector_destroy(&UNPACK_SELECT_DATA(statement->statement_data)->selected_ids);
 
     return EXECUTE_SUCCESS;
 }
@@ -121,6 +137,8 @@ PrepareResult prepare_select(string_buffer *buffer, statement *statement)
     strtok(buffer->string, " "); // keyword
     char *id = strtok(NULL, " ");
 
+    statement->statement_data = Malloc(sizeof(select_statement_data));
+
     if(id!=NULL && strcmp(id,"*") == 0)
     {
         if (strtok(NULL, " ") != NULL)
@@ -128,14 +146,14 @@ PrepareResult prepare_select(string_buffer *buffer, statement *statement)
             return PREPARE_UNRECOGNIZED;
         }
 
-        statement->select_all = true;
+        UNPACK_SELECT_DATA(statement->statement_data)->select_all=true;
 
         return PREPARE_SUCCESS;
     }
 
-    statement->select_all = false;
+    UNPACK_SELECT_DATA(statement->statement_data)->select_all=false;
 
-    id_vector_init(&statement->selected_ids);
+    id_vector_init(&UNPACK_SELECT_DATA(statement->statement_data)->selected_ids);
 
     while(id)
     {
@@ -143,7 +161,7 @@ PrepareResult prepare_select(string_buffer *buffer, statement *statement)
         {
             return PREPARE_SELECT_BAD_ID; 
         }
-        id_vector_push_back(&statement->selected_ids,atoi(id));
+        id_vector_push_back(&UNPACK_SELECT_DATA(statement->statement_data)->selected_ids,atoi(id));
 
         id = strtok(NULL," ");
     }
@@ -155,7 +173,9 @@ PrepareResult prepare_insert(string_buffer *buffer, statement *statement)
 {
     statement->statement_type = INSERT_STATEMENT;
     
-    row_vector_init(&statement->rows_to_insert);
+    statement->statement_data = Malloc(sizeof(insert_statement_data));
+
+    row_vector_init(&(UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert));
 
     strtok(buffer->string, " "); // keyword
 
@@ -183,7 +203,7 @@ PrepareResult prepare_insert(string_buffer *buffer, statement *statement)
         read_row.id = atoi(id);
         strcpy(read_row.name,name);
 
-        row_vector_push_back(&statement->rows_to_insert,read_row);
+        row_vector_push_back(&(UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert), read_row);
     }
 
     return PREPARE_SUCCESS;
@@ -215,20 +235,20 @@ ExecuteResult execute_insert(statement *statement, table *table)
         table_find_root(table);
     }
 
-    for(int i=0;i<statement->rows_to_insert.size;i++)
+    for (int i = 0; i < UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert.size; i++)
     {
-        row row_to_insert = row_vector_read(&statement->rows_to_insert,i);
+        row row_to_insert = row_vector_read(&UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert,i);
 
         table_db_insert(table, row_to_insert.id, &row_to_insert);
     }
 
-    row_vector_destroy(&statement->rows_to_insert);
+    row_vector_destroy(&UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert);
 
     return EXECUTE_SUCCESS;
 }
 ExecuteResult execute_select(statement *statement, table *table)
 {
-    if(statement->select_all == false)
+    if(UNPACK_SELECT_DATA(statement->statement_data)->select_all == false)
     {
         return execute_select_subset(statement,table);
     }

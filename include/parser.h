@@ -16,6 +16,11 @@
         GENERATOR(PREPARE_INSERT_STRING_TOO_BIG) \
         GENERATOR(PREPARE_SELECT_BAD_ID) \
 
+#define FOREACH_STATEMENT_TYPE_ENUM(GENERATOR) \
+        GENERATOR(SELECT_STATEMENT) \
+        GENERATOR(INSERT_STATEMENT) \
+        GENERATOR(UPDATE_STATEMENT) \
+
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
 
@@ -36,16 +41,15 @@ typedef enum
 
 typedef enum
 {
-    SELECT_STATEMENT, 
-    INSERT_STATEMENT
+    FOREACH_STATEMENT_TYPE_ENUM(GENERATE_ENUM)
 } StatementType;
+
+typedef void* StatementData;
 
 typedef struct _statement
 {
     StatementType statement_type;
-    row_vector rows_to_insert;
-    id_vector selected_ids;
-    bool select_all;
+    StatementData statement_data;
 } statement; 
 
 void print_prompt();

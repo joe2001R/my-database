@@ -35,6 +35,8 @@ int main(int argc, char** argv)
             }
             
             ENSURE(execute_statement(&m_statement, m_table) == EXECUTE_SUCCESS, "could not execute statement");
+
+            DESTROY(m_statement.statement_data);
         }
 
         string_buffer_destroy(&buffer);
