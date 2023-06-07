@@ -4,6 +4,28 @@
 
 #include <stdio.h>
 
+static PrepareResult prepare_statement_elog(string_buffer* buffer,statement* statement)
+{
+    PrepareResult prepare_result = prepare_statement(buffer,statement);
+
+    if (prepare_result != PREPARE_SUCCESS)
+    {
+        fprintf(stdout, "please try again : could not prepare statement ( %s )\n", PREPARE_RESULT_STRING[prepare_result]);
+    }
+
+    return prepare_result;
+}
+
+static void execute_statement_elog(statement* statement,table* table)
+{
+    ExecuteResult execute_result = execute_statement(statement,table);
+
+    if(execute_result != EXECUTE_SUCCESS)
+    {
+        fprintf(stdout,"Error: could not execute statement ( %s )\n",EXECUTE_RESULT_STRING[execute_result]);
+    }
+}
+
 int main(int argc, char** argv)
 {
     if(argc < 2)
@@ -11,7 +33,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    table* m_table = table_db_open(argv[1]);
+    table* table = table_db_open(argv[1]);
 
     while(1)
     {
@@ -21,22 +43,19 @@ int main(int argc, char** argv)
         
         if(is_meta_command(&buffer))
         {
-            do_meta_command(&buffer,m_table);
+            do_meta_command(&buffer,table);
         }
         else
         {
-            statement* m_statement = create_statement();
-            PrepareResult m_prepare_result = prepare_statement(&buffer, m_statement);
-
-            if(m_prepare_result != PREPARE_SUCCESS)
-            {
-                fprintf(stdout,"please try again : could not prepare statement ( %s )\n", PREPARE_RESULT_STRING[m_prepare_result]);
-                continue;
-            }
+            statement* statement = create_statement();
+            PrepareResult prepare_result = prepare_statement_elog(&buffer,statement);
             
-            ENSURE(execute_statement(m_statement, m_table) == EXECUTE_SUCCESS, "could not execute statement");
+            if(prepare_result == PREPARE_SUCCESS)
+            {
+                execute_statement_elog(statement, table);
+            }
 
-            destroy_statement(m_statement);
+            destroy_statement(statement);
         }
 
         string_buffer_destroy(&buffer);

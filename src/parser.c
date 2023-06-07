@@ -20,15 +20,21 @@ typedef struct _select_statement_data
     id_vector selected_ids;
 } select_statement_data;
 
-typedef struct _insert_statement_Data
+typedef struct _insert_statement_data
 {
     row_vector rows_to_insert;
 } insert_statement_data;
+
+typedef struct _update_statement_data
+{
+    row_vector rows_to_update;
+} update_statement_data;
 
 #define UNPACK(type,vptr) ((type*) vptr)
 
 #define UNPACK_SELECT_DATA(vptr) UNPACK(select_statement_data,vptr)
 #define UNPACK_INSERT_DATA(vptr) UNPACK(insert_statement_data,vptr)
+#define UNPACK_UPDATE_DATA(vptr) UNPACK(update_statement_data,vptr)
 
 static void print_row(const row* m_row)
 {
@@ -82,6 +88,16 @@ static ExecuteResult execute_select_subset(statement* statement,table* table)
     id_vector_destroy(&UNPACK_SELECT_DATA(statement->statement_data)->selected_ids);
 
     return EXECUTE_SUCCESS;
+}
+
+static bool is_valid_id(const char* id)
+{
+    errno = 0;
+    char *endptr;
+
+    return (strtol(id, &endptr, 10) >= 0)   &&
+            endptr != id                    &&
+            endptr[0] == '\0';
 }
 
 /*************************************************************************/
@@ -142,6 +158,10 @@ PrepareResult prepare_statement(string_buffer *buffer, statement *statement)
     {
         return prepare_select(buffer,statement);
     }
+    else if(strncmp(buffer->string,"update",6) == 0)
+    {
+        return prepare_update(buffer,statement);
+    }
 
     return PREPARE_UNRECOGNIZED;
 }
@@ -197,17 +217,17 @@ PrepareResult prepare_insert(string_buffer *buffer, statement *statement)
 
     while(1)
     {
-	errno = 0;
+	    errno = 0;
         char* id = strtok(NULL," ");
         char* name = strtok(NULL," ,");
-	char* endptr;
+	    char* endptr;
 
         if(id == NULL || name == NULL)
         {
             break;
         }
-        
-        if((strtol(id,&endptr,10)<0) || endptr==id || endptr[0]!='\0') 
+
+        if (!is_valid_id(id))
         {
             return PREPARE_INSERT_INVALID_ID;
         }
@@ -236,6 +256,10 @@ ExecuteResult execute_statement(statement *statement, table *table)
     else if(statement->statement_type == SELECT_STATEMENT)
     {
         return execute_select(statement,table);
+    }
+    else if(statement->statement_type == UPDATE_STATEMENT)
+    {
+        return execute_update(statement,table);
     }
 
     fprintf(stderr,"executing invalid statement");
@@ -274,4 +298,65 @@ ExecuteResult execute_select(statement *statement, table *table)
     {
         return execute_select_all(table);
     }
+}
+
+PrepareResult prepare_update(string_buffer *buffer, statement *statement)
+{
+    statement->statement_type = UPDATE_STATEMENT;
+
+    statement->statement_data = Malloc(sizeof(update_statement_data));
+
+    row_vector_init(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update);
+
+    strtok(buffer->string," ");//key word
+
+    while(1)
+    {
+        char* id = strtok(NULL," ");
+        char* name = strtok(NULL," ,");
+
+        if(id == NULL || name == NULL)
+        {
+            break;
+        }
+
+        if(!is_valid_id(id))
+        {
+            return PREPARE_UPDATE_INVALID_ID;
+        }
+
+        if(strlen(name) > NAME_MAX_LENGTH)
+        {
+            return PREPARE_UPDATE_STRING_TOO_BIG;
+        }
+
+        row read_row;
+        read_row.id = atoi(id);
+        strcpy(read_row.name,name);
+
+        row_vector_push_back(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update,read_row);
+    }
+
+    return PREPARE_SUCCESS;
+}
+
+ExecuteResult execute_update(statement *statement, table *table)
+{
+    for(uint32_t i = 0; i < UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update.size; i++)
+    {
+        row read_row = row_vector_read(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update,i);
+
+        int error = table_db_update(table,read_row.id,&read_row);
+
+        if(error == UPDATE_EMPTY_DB)
+        {
+            return EXECUTE_UPDATE_EMPTY_DB;
+        }
+        else if(error == UPDATE_ROW_NOT_PRESENT)
+        {
+            return EXECUTE_UPDATE_ROW_NOT_FOUND;
+        }
+    }
+
+    return EXECUTE_SUCCESS;
 }

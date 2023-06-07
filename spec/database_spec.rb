@@ -125,4 +125,15 @@ describe 'database' do
 
     end
 
+    it 'updates many records in one command' do
+
+        run_script(["insert 10 joe,7 joe,5 joe,2 joe,3 joe",".exit"])
+        run_script(["update 2 jp2,3 jp3,5 jp5,7 jp7,10 jp10",".exit"])
+        
+        result = run_script(["select *",".exit"])
+
+        expect(result).to match_array(["db > 2 jp2","3 jp3","5 jp5","7 jp7","10 jp10","db > "])
+
+    end
+
 end

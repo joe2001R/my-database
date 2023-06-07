@@ -157,3 +157,26 @@ void table_db_insert(table *table, uint32_t key, row *row_to_insert)
 
     DESTROY(serialized_row);
 }
+
+int table_db_update(table *table, uint32_t key, row *row_to_update)
+{
+    ENSURE(row_to_update->id == key,"Error: row's id %d and key %d mismatch",row_to_update->id,key);
+
+    void* root_node = pager_get_valid_page(table->pager,table->root_page_index);
+
+    if(root_node == NULL)
+    {
+        return UPDATE_EMPTY_DB;
+    }
+
+    LeafNodeRowPair leaf_node_row_pair = find_row(root_node,key,NULL,table->pager);
+
+    if(leaf_node_row_pair.row == NULL)
+    {
+        return UPDATE_ROW_NOT_PRESENT;
+    }
+
+    row_serialize(leaf_node_row_pair.row,row_to_update);
+
+    return UPDATE_SUCCESS;
+}
