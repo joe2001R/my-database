@@ -16,8 +16,8 @@
         GENERATOR(PREPARE_INSERT_STRING_TOO_BIG) \
         GENERATOR(PREPARE_SELECT_BAD_ID) \
         GENERATOR(PREPARE_UPDATE_INVALID_ID)\
-        GENERATOR(PREPARE_UPDATE_STRING_TOO_BIG)\ 
-
+        GENERATOR(PREPARE_UPDATE_STRING_TOO_BIG)\
+        
 #define FOREACH_STATEMENT_TYPE_ENUM(GENERATOR) \
         GENERATOR(SELECT_STATEMENT) \
         GENERATOR(INSERT_STATEMENT) \
@@ -69,13 +69,7 @@ bool is_meta_command(string_buffer* buffer);
 void do_meta_command(string_buffer* buffer,table* table);
 
 PrepareResult prepare_statement(string_buffer* buffer, statement* statement);
-PrepareResult prepare_select(string_buffer* buffer, statement* statement);
-PrepareResult prepare_insert(string_buffer* buffer, statement* statement);
-PrepareResult prepare_update(string_buffer* buffer, statement* statement);
 
 ExecuteResult execute_statement(statement* statement,table* table);
-ExecuteResult execute_insert(statement *statement, table *table);
-ExecuteResult execute_select(statement *statement, table *table);
-ExecuteResult execute_update(statement *statement, table *table);
 
 #endif 

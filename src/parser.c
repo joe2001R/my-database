@@ -100,6 +100,181 @@ static bool is_valid_id(const char* id)
             endptr[0] == '\0';
 }
 
+static ExecuteResult execute_update(statement *statement, table *table)
+{
+    for(uint32_t i = 0; i < UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update.size; i++)
+    {
+        row read_row = row_vector_read(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update,i);
+
+        int error = table_db_update(table,read_row.id,&read_row);
+
+        if(error == UPDATE_EMPTY_DB)
+        {
+            return EXECUTE_UPDATE_EMPTY_DB;
+        }
+        else if(error == UPDATE_ROW_NOT_PRESENT)
+        {
+            return EXECUTE_UPDATE_ROW_NOT_FOUND;
+        }
+    }
+
+    return EXECUTE_SUCCESS;
+}
+
+static PrepareResult prepare_select(string_buffer *buffer, statement *statement)
+{
+    statement->statement_type = SELECT_STATEMENT;
+
+    strtok(buffer->string, " "); // keyword
+    char *id = strtok(NULL, " ");
+
+    statement->statement_data = Malloc(sizeof(select_statement_data));
+
+    if(id!=NULL && strcmp(id,"*") == 0)
+    {
+        if (strtok(NULL, " ") != NULL)
+        {
+            return PREPARE_UNRECOGNIZED;
+        }
+
+        UNPACK_SELECT_DATA(statement->statement_data)->select_all=true;
+
+        return PREPARE_SUCCESS;
+    }
+
+    UNPACK_SELECT_DATA(statement->statement_data)->select_all=false;
+
+    id_vector_init(&UNPACK_SELECT_DATA(statement->statement_data)->selected_ids);
+
+    while(id)
+    {
+        if(atoi(id)<0)
+        {
+            return PREPARE_SELECT_BAD_ID; 
+        }
+        id_vector_push_back(&UNPACK_SELECT_DATA(statement->statement_data)->selected_ids,atoi(id));
+
+        id = strtok(NULL," ");
+    }
+
+    return PREPARE_SUCCESS;
+}
+
+static PrepareResult prepare_insert(string_buffer *buffer, statement *statement)
+{
+    statement->statement_type = INSERT_STATEMENT;
+    
+    statement->statement_data = Malloc(sizeof(insert_statement_data));
+
+    row_vector_init(&(UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert));
+
+    strtok(buffer->string, " "); // keyword
+
+    while(1)
+    {
+        char* id = strtok(NULL," ");
+        char* name = strtok(NULL," ,");
+
+        if(id == NULL || name == NULL)
+        {
+            break;
+        }
+
+        if (!is_valid_id(id))
+        {
+            return PREPARE_INSERT_INVALID_ID;
+        }
+        
+        if( strlen(name)> NAME_MAX_LENGTH )
+        {
+            return PREPARE_INSERT_STRING_TOO_BIG;
+        }
+
+        row read_row;
+        read_row.id = atoi(id);
+        strcpy(read_row.name,name);
+
+        row_vector_push_back(&(UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert), read_row);
+    }
+
+    return PREPARE_SUCCESS;
+}
+
+static ExecuteResult execute_insert(statement *statement, table *table)
+{
+    if (table_db_is_empty(table))
+    {
+        table_init_root(table);
+    }
+    else
+    {
+        table_find_root(table);
+    }
+
+    for (int i = 0; i < UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert.size; i++)
+    {
+        row row_to_insert = row_vector_read(&UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert,i);
+
+        table_db_insert(table, row_to_insert.id, &row_to_insert);
+    }
+
+    row_vector_destroy(&UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert);
+
+    return EXECUTE_SUCCESS;
+}
+
+static ExecuteResult execute_select(statement *statement, table *table)
+{
+    if(UNPACK_SELECT_DATA(statement->statement_data)->select_all == false)
+    {
+        return execute_select_subset(statement,table);
+    }
+    else
+    {
+        return execute_select_all(table);
+    }
+}
+
+static PrepareResult prepare_update(string_buffer *buffer, statement *statement)
+{
+    statement->statement_type = UPDATE_STATEMENT;
+
+    statement->statement_data = Malloc(sizeof(update_statement_data));
+
+    row_vector_init(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update);
+
+    strtok(buffer->string," ");//key word
+
+    while(1)
+    {
+        char* id = strtok(NULL," ");
+        char* name = strtok(NULL," ,");
+
+        if(id == NULL || name == NULL)
+        {
+            break;
+        }
+
+        if(!is_valid_id(id))
+        {
+            return PREPARE_UPDATE_INVALID_ID;
+        }
+
+        if(strlen(name) > NAME_MAX_LENGTH)
+        {
+            return PREPARE_UPDATE_STRING_TOO_BIG;
+        }
+
+        row read_row;
+        read_row.id = atoi(id);
+        strcpy(read_row.name,name);
+
+        row_vector_push_back(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update,read_row);
+    }
+
+    return PREPARE_SUCCESS;
+}
+
 /*************************************************************************/
 
 statement* create_statement()
@@ -148,105 +323,6 @@ void do_meta_command(string_buffer *buffer, table *table)
     }
 }
 
-PrepareResult prepare_statement(string_buffer *buffer, statement *statement)
-{
-    if(strncmp(buffer->string,"insert",6) == 0)
-    {
-        return prepare_insert(buffer,statement);
-    }
-    else if(strncmp(buffer->string,"select",6) == 0)
-    {
-        return prepare_select(buffer,statement);
-    }
-    else if(strncmp(buffer->string,"update",6) == 0)
-    {
-        return prepare_update(buffer,statement);
-    }
-
-    return PREPARE_UNRECOGNIZED;
-}
-
-PrepareResult prepare_select(string_buffer *buffer, statement *statement)
-{
-    statement->statement_type = SELECT_STATEMENT;
-
-    strtok(buffer->string, " "); // keyword
-    char *id = strtok(NULL, " ");
-
-    statement->statement_data = Malloc(sizeof(select_statement_data));
-
-    if(id!=NULL && strcmp(id,"*") == 0)
-    {
-        if (strtok(NULL, " ") != NULL)
-        {
-            return PREPARE_UNRECOGNIZED;
-        }
-
-        UNPACK_SELECT_DATA(statement->statement_data)->select_all=true;
-
-        return PREPARE_SUCCESS;
-    }
-
-    UNPACK_SELECT_DATA(statement->statement_data)->select_all=false;
-
-    id_vector_init(&UNPACK_SELECT_DATA(statement->statement_data)->selected_ids);
-
-    while(id)
-    {
-        if(atoi(id)<0)
-        {
-            return PREPARE_SELECT_BAD_ID; 
-        }
-        id_vector_push_back(&UNPACK_SELECT_DATA(statement->statement_data)->selected_ids,atoi(id));
-
-        id = strtok(NULL," ");
-    }
-
-    return PREPARE_SUCCESS;
-}
-
-PrepareResult prepare_insert(string_buffer *buffer, statement *statement)
-{
-    statement->statement_type = INSERT_STATEMENT;
-    
-    statement->statement_data = Malloc(sizeof(insert_statement_data));
-
-    row_vector_init(&(UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert));
-
-    strtok(buffer->string, " "); // keyword
-
-    while(1)
-    {
-	    errno = 0;
-        char* id = strtok(NULL," ");
-        char* name = strtok(NULL," ,");
-	    char* endptr;
-
-        if(id == NULL || name == NULL)
-        {
-            break;
-        }
-
-        if (!is_valid_id(id))
-        {
-            return PREPARE_INSERT_INVALID_ID;
-        }
-        
-        if( strlen(name)> NAME_MAX_LENGTH )
-        {
-            return PREPARE_INSERT_STRING_TOO_BIG;
-        }
-
-        row read_row;
-        read_row.id = atoi(id);
-        strcpy(read_row.name,name);
-
-        row_vector_push_back(&(UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert), read_row);
-    }
-
-    return PREPARE_SUCCESS;
-}
-
 ExecuteResult execute_statement(statement *statement, table *table)
 {
     if(statement->statement_type == INSERT_STATEMENT)
@@ -266,97 +342,20 @@ ExecuteResult execute_statement(statement *statement, table *table)
     exit(EXIT_FAILURE);
 }
 
-ExecuteResult execute_insert(statement *statement, table *table)
+PrepareResult prepare_statement(string_buffer *buffer, statement *statement)
 {
-    if (table_db_is_empty(table))
+    if(strncmp(buffer->string,"insert",6) == 0)
     {
-        table_init_root(table);
+        return prepare_insert(buffer,statement);
     }
-    else
+    else if(strncmp(buffer->string,"select",6) == 0)
     {
-        table_find_root(table);
+        return prepare_select(buffer,statement);
     }
-
-    for (int i = 0; i < UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert.size; i++)
+    else if(strncmp(buffer->string,"update",6) == 0)
     {
-        row row_to_insert = row_vector_read(&UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert,i);
-
-        table_db_insert(table, row_to_insert.id, &row_to_insert);
+        return prepare_update(buffer,statement);
     }
 
-    row_vector_destroy(&UNPACK_INSERT_DATA(statement->statement_data)->rows_to_insert);
-
-    return EXECUTE_SUCCESS;
-}
-ExecuteResult execute_select(statement *statement, table *table)
-{
-    if(UNPACK_SELECT_DATA(statement->statement_data)->select_all == false)
-    {
-        return execute_select_subset(statement,table);
-    }
-    else
-    {
-        return execute_select_all(table);
-    }
-}
-
-PrepareResult prepare_update(string_buffer *buffer, statement *statement)
-{
-    statement->statement_type = UPDATE_STATEMENT;
-
-    statement->statement_data = Malloc(sizeof(update_statement_data));
-
-    row_vector_init(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update);
-
-    strtok(buffer->string," ");//key word
-
-    while(1)
-    {
-        char* id = strtok(NULL," ");
-        char* name = strtok(NULL," ,");
-
-        if(id == NULL || name == NULL)
-        {
-            break;
-        }
-
-        if(!is_valid_id(id))
-        {
-            return PREPARE_UPDATE_INVALID_ID;
-        }
-
-        if(strlen(name) > NAME_MAX_LENGTH)
-        {
-            return PREPARE_UPDATE_STRING_TOO_BIG;
-        }
-
-        row read_row;
-        read_row.id = atoi(id);
-        strcpy(read_row.name,name);
-
-        row_vector_push_back(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update,read_row);
-    }
-
-    return PREPARE_SUCCESS;
-}
-
-ExecuteResult execute_update(statement *statement, table *table)
-{
-    for(uint32_t i = 0; i < UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update.size; i++)
-    {
-        row read_row = row_vector_read(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update,i);
-
-        int error = table_db_update(table,read_row.id,&read_row);
-
-        if(error == UPDATE_EMPTY_DB)
-        {
-            return EXECUTE_UPDATE_EMPTY_DB;
-        }
-        else if(error == UPDATE_ROW_NOT_PRESENT)
-        {
-            return EXECUTE_UPDATE_ROW_NOT_FOUND;
-        }
-    }
-
-    return EXECUTE_SUCCESS;
+    return PREPARE_UNRECOGNIZED;
 }

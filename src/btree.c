@@ -1,14 +1,20 @@
 #include "btree.h"
+#include "nodes.h"
 #include "pager.h"
 #include "row.h"
 #include "table.def.h"
 #include "table.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
+
+static_assert(LEAF_NODE_MAX_NUM_RECORDS > 0, "leaf's node maximum number of records is less than or equal to 0");
+
+static_assert(INTERNAL_NODE_MAX_NUM_KEYS > 0, "internal nodes 's maximum number of keys is less than or equal to 0");
 
 //private functions
 

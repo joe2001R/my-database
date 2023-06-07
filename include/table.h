@@ -8,7 +8,7 @@
 #include "utilities.h"
 #include "table.fwd.h"
 
-typedef enum
+enum
 {
     UPDATE_SUCCESS,
     UPDATE_EMPTY_DB,
