@@ -54,6 +54,9 @@ typedef struct _statement
 
 void print_prompt();
 
+statement* create_statement();
+void destroy_statement(statement* statement);
+
 bool is_meta_command(string_buffer* buffer);
 void do_meta_command(string_buffer* buffer,table* table);
 

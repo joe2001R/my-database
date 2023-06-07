@@ -25,8 +25,8 @@ int main(int argc, char** argv)
         }
         else
         {
-            statement m_statement;
-            PrepareResult m_prepare_result = prepare_statement(&buffer, &m_statement);
+            statement* m_statement = create_statement();
+            PrepareResult m_prepare_result = prepare_statement(&buffer, m_statement);
 
             if(m_prepare_result != PREPARE_SUCCESS)
             {
@@ -34,9 +34,9 @@ int main(int argc, char** argv)
                 continue;
             }
             
-            ENSURE(execute_statement(&m_statement, m_table) == EXECUTE_SUCCESS, "could not execute statement");
+            ENSURE(execute_statement(m_statement, m_table) == EXECUTE_SUCCESS, "could not execute statement");
 
-            DESTROY(m_statement.statement_data);
+            destroy_statement(m_statement);
         }
 
         string_buffer_destroy(&buffer);

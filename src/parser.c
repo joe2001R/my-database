@@ -85,6 +85,21 @@ static ExecuteResult execute_select_subset(statement* statement,table* table)
 
 /*************************************************************************/
 
+statement* create_statement()
+{
+	statement* return_value = Malloc(sizeof(statement));
+
+	return_value->statement_data = NULL;
+
+	return return_value;
+}
+
+void destroy_statement(statement* statement)
+{
+	DESTROY(statement->statement_data);
+	DESTROY(statement);
+}
+
 void print_prompt()
 {
     printf("db > ");
