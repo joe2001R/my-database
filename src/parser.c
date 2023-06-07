@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -196,15 +197,17 @@ PrepareResult prepare_insert(string_buffer *buffer, statement *statement)
 
     while(1)
     {
+	errno = 0;
         char* id = strtok(NULL," ");
         char* name = strtok(NULL," ,");
-    
+	char* endptr;
+
         if(id == NULL || name == NULL)
         {
             break;
         }
         
-        if(atoi(id)<0) 
+        if((strtol(id,&endptr,10)<0) || endptr==id || endptr[0]!='\0') 
         {
             return PREPARE_INSERT_INVALID_ID;
         }
