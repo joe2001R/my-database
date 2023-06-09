@@ -28,10 +28,7 @@ static void execute_statement_elog(statement* statement,table* table)
 
 int main(int argc, char** argv)
 {
-    if(argc < 2)
-    {
-        return 1;
-    }
+    ENSURE(argc>=2,"Error: missing db filename input argument");
 
     table* table = table_db_open(argv[1]);
 
