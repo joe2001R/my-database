@@ -312,13 +312,13 @@ void do_meta_command(string_buffer *buffer, table *table)
     else if(strcmp(buffer->string,".diagnostic") == 0)
     {
         string_buffer buffer = btree_get_diagnostics();
-        printf(buffer.string);
+	fputs(buffer.string,stdout);
         string_buffer_destroy(&buffer);
     }
     else if(strcmp(buffer->string,".btree") == 0)
     {
         string_buffer buffer = table_print_btree(table);
-        printf(buffer.string);
+        fputs(buffer.string,stdout);
         string_buffer_destroy(&buffer);
     }
 }
