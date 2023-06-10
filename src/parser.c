@@ -102,6 +102,8 @@ static bool is_valid_id(const char* id)
 
 static ExecuteResult execute_update(statement *statement, table *table)
 {
+    ExecuteResult result = EXECUTE_SUCCESS;
+
     for(uint32_t i = 0; i < UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update.size; i++)
     {
         row read_row = row_vector_read(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update,i);
@@ -110,15 +112,26 @@ static ExecuteResult execute_update(statement *statement, table *table)
 
         if(error == UPDATE_EMPTY_DB)
         {
-            return EXECUTE_UPDATE_EMPTY_DB;
+            result = EXECUTE_UPDATE_EMPTY_DB;
+            break;
         }
         else if(error == UPDATE_ROW_NOT_PRESENT)
         {
-            return EXECUTE_UPDATE_ROW_NOT_FOUND;
+            const char* format = "id: %d, name:%s";
+            size_t string_len = snprintf(NULL,0,format,read_row.id,read_row.name);
+
+            char* error_msg = Malloc(string_len + 1);
+            sprintf(error_msg,format,read_row.id,read_row.name);
+
+            statement->statement_error = error_msg;
+
+            result=EXECUTE_UPDATE_ROW_NOT_FOUND;
+            break;
         }
     }
+    row_vector_destroy(&UNPACK_UPDATE_DATA(statement->statement_data)->rows_to_update);
 
-    return EXECUTE_SUCCESS;
+    return result;
 }
 
 static PrepareResult prepare_select(string_buffer *buffer, statement *statement)
@@ -282,6 +295,7 @@ statement* create_statement()
 	statement* return_value = Malloc(sizeof(statement));
 
 	return_value->statement_data = NULL;
+    return_value->statement_error = NULL;
 
 	return return_value;
 }
@@ -289,6 +303,7 @@ statement* create_statement()
 void destroy_statement(statement* statement)
 {
 	DESTROY(statement->statement_data);
+    DESTROY(statement->statement_error);
 	DESTROY(statement);
 }
 

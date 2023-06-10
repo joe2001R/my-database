@@ -23,6 +23,10 @@ static void execute_statement_elog(statement* statement,table* table)
     if(execute_result != EXECUTE_SUCCESS)
     {
         fprintf(stdout,"Error: could not execute statement ( %s )\n",EXECUTE_RESULT_STRING[execute_result]);
+        if(statement->statement_error != NULL)
+        {
+            fprintf(stdout,"Problem with given input: %s\n",statement->statement_error);
+        }
     }
 }
 

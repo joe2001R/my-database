@@ -53,11 +53,14 @@ typedef enum
 } StatementType;
 
 typedef void* StatementData;
+typedef const char* StatementErrorString;
 
 typedef struct _statement
 {
     StatementType statement_type;
     StatementData statement_data;
+    StatementErrorString statement_error;
+    
 } statement; 
 
 void print_prompt();
