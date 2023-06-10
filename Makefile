@@ -29,6 +29,7 @@ db: $(OBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 Gemfile:
+	sudo apt-get install bundler
 	bundle init
 	echo "gem 'rspec'" >> Gemfile
 
