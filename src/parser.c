@@ -342,20 +342,34 @@ ExecuteResult execute_statement(statement *statement, table *table)
     exit(EXIT_FAILURE);
 }
 
+typedef PrepareResult (*prepare_statement_fn)(string_buffer*,statement*);
+
 PrepareResult prepare_statement(string_buffer *buffer, statement *statement)
 {
-    if(strncmp(buffer->string,"insert",6) == 0)
+    char* string_copy = strdup(buffer->string);
+    const char* keyword = strtok(string_copy," ");
+
+    prepare_statement_fn callback = NULL;
+
+    if(strcmp(keyword,"insert") == 0)
     {
-        return prepare_insert(buffer,statement);
+        callback = prepare_insert;
     }
-    else if(strncmp(buffer->string,"select",6) == 0)
+    else if(strcmp(keyword,"select") == 0)
     {
-        return prepare_select(buffer,statement);
+        callback = prepare_select;
     }
-    else if(strncmp(buffer->string,"update",6) == 0)
+    else if(strcmp(keyword,"update") == 0)
     {
-        return prepare_update(buffer,statement);
+        callback = prepare_update;
     }
 
-    return PREPARE_UNRECOGNIZED;
+    free(string_copy);
+
+    if(callback == NULL)
+    {
+        return PREPARE_UNRECOGNIZED;
+    }
+
+    return callback(buffer,statement);
 }
