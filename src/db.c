@@ -40,6 +40,7 @@ int main(int argc, char** argv)
     {
         string_buffer buffer;
         print_prompt();
+        string_buffer_init(&buffer);
         string_buffer_read(&buffer);
         
         if(is_meta_command(&buffer))
