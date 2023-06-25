@@ -32,8 +32,9 @@ Gemfile:
 	sudo apt-get install bundler
 	bundle init
 	echo "gem 'rspec'" >> Gemfile
+	bundle install
 
-test: Gemfile
+test: | Gemfile
 	bundle exec rspec
 
 clean:
