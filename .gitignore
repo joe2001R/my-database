@@ -5,3 +5,5 @@ Gemfile*
 db
 *.txt
 *.d
+*.json
+*.idx
