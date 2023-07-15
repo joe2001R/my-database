@@ -39,7 +39,6 @@ int main(int argc, char** argv)
     while(1)
     {
         string_buffer buffer;
-        print_prompt();
         string_buffer_init(&buffer);
         string_buffer_read(&buffer);
         

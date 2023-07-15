@@ -9,7 +9,7 @@ describe 'database' do
 
     def run_script(commands)
         raw_output = nil
-        IO.popen("./db test.db","r+") do |pipe|
+        IO.popen("./db test.db -n","r+") do |pipe|
             commands.each do |command|
                 begin
                     pipe.puts command
@@ -22,32 +22,38 @@ describe 'database' do
 
             raw_output=pipe.gets(nil)
         end
-        raw_output.split("\n")
+        result = raw_output.split("\n")
+        
+        to_remove = commands.map { |element| element.prepend("db > ")}
+        
+        result.reject! { |element| to_remove.include?(element) } # temporary fix ...
+
+        return result
     end
 
     it 'persists one record' do
         run_script(["insert 1 joestar",".exit"])
         result = run_script(["select 1",".exit"])
-        expect(result).to match_array(["db > ","db > 1 joestar"])
+        expect(result).to match_array(["1 joestar"])
     end
 
     it 'persists many records' do
         run_script(["insert 100 joestar","insert 200 jotaro","insert 3 joe",".exit"])
         result = run_script(["select 100 200 3",".exit"])
-        expect(result).to match_array(["db > ","db > 100 joestar","200 jotaro","3 joe"])
+        expect(result).to match_array(["100 joestar","200 jotaro","3 joe"])
     end
 
     it 'prints every record in order' do
         run_script(["insert 100 joestar","insert 200 jotaro","insert 3 joe","insert 4 jojo",".exit"])
         result = run_script(["select *",".exit"])
-        expect(result).to match_array(["db > ","db > 3 joe","4 jojo" ,"100 joestar","200 jotaro"])
+        expect(result).to match_array(["3 joe","4 jojo" ,"100 joestar","200 jotaro"])
         
     end
 
     it 'persists even more records' do
         run_script(["insert 100 joestar","insert 200 jotaro","insert 3 joe","insert 500 joe1","insert 600 joe2","insert 700 joe3",".exit"])
         result = run_script(["select *",".exit"])
-        expect(result).to match_array(["db > ", "db > 3 joe" ,"100 joestar","200 jotaro","500 joe1","600 joe2","700 joe3"])
+        expect(result).to match_array(["3 joe" ,"100 joestar","200 jotaro","500 joe1","600 joe2","700 joe3"])
     end
     
     it 'persists much more records' do
@@ -64,7 +70,7 @@ describe 'database' do
 
         run_script(insert_input)
 
-        expected_output = ["db > ","db > 1 example1"]
+        expected_output = ["1 example1"]
 
         for i in 2..num_records do
             expected_output.push("#{i} example#{i}")
@@ -94,7 +100,7 @@ describe 'database' do
 
         expected_output = 
         [
-        "db > internal node: num of nodes is 3",
+        "internal node: num of nodes is 3",
         "    child0's key is 15",
         "    leaf node: num of records is 3",
         "        key:4, value:joe",
@@ -109,8 +115,7 @@ describe 'database' do
         "    leaf node: num of records is 3",
         "        key:50, value:joe",
         "        key:90, value:joe",
-        "        key:100, value:joe",
-        "db > "
+        "        key:100, value:joe"
         ]
 
         expect(result).to match_array(expected_output)
@@ -121,7 +126,7 @@ describe 'database' do
         run_script(["insert 100 joe,53 joe,1 joe",".exit"])
         result = run_script(["select *",".exit"])
 
-        expect(result).to match_array(["db > 1 joe","53 joe","100 joe","db > "])
+        expect(result).to match_array(["1 joe","53 joe","100 joe"])
 
     end
 
@@ -132,7 +137,7 @@ describe 'database' do
         
         result = run_script(["select *",".exit"])
 
-        expect(result).to match_array(["db > 2 jp2","3 jp3","5 jp5","7 jp7","10 jp10","db > "])
+        expect(result).to match_array(["2 jp2","3 jp3","5 jp5","7 jp7","10 jp10"])
 
     end
 

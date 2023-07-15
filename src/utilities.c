@@ -1,12 +1,14 @@
 #define _GNU_SOURCE
 
+#include <readline/readline.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include<string.h>
+#include <string.h>
 #include <sys/param.h>
 #include <sys/types.h>
 
+#include "parser.fwd.h"
 #include "utilities.h"
 
 void ensure(bool condition, const char *error_message, ...)
@@ -45,11 +47,11 @@ void string_buffer_destroy(string_buffer *buffer)
 
 void string_buffer_read(string_buffer *buffer)
 {
-    ssize_t bytes_read = getline(&buffer->string, &buffer->buffer_capacity, stdin);
-    ENSURE(bytes_read > 0, "unsuccessful `getline`");
-
-    buffer->buffer_size = bytes_read - 1;
-    buffer->string[bytes_read - 1] = '\0';
+    char* input = readline(PRINT_PROMPT);
+    ENSURE(input!=NULL, "unsuccessful `readline`");
+    
+    buffer->string = input;
+    buffer->buffer_size = strlen(input)+1;
 }
 
 void string_buffer_store(string_buffer *buffer, const char *string)

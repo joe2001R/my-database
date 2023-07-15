@@ -307,11 +307,6 @@ void destroy_statement(statement* statement)
 	DESTROY(statement);
 }
 
-void print_prompt()
-{
-    printf("db > ");
-}
-
 bool is_meta_command(string_buffer* buffer)
 {
     return buffer->buffer_size!=0 && buffer->string[0]=='.';
@@ -327,7 +322,7 @@ void do_meta_command(string_buffer *buffer, table *table)
     else if(strcmp(buffer->string,".diagnostic") == 0)
     {
         string_buffer buffer = btree_get_diagnostics();
-	fputs(buffer.string,stdout);
+	    fputs(buffer.string,stdout);
         string_buffer_destroy(&buffer);
     }
     else if(strcmp(buffer->string,".btree") == 0)

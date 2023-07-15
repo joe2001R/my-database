@@ -3,9 +3,10 @@
 
 #include <stdbool.h>
 
-#include "utilities.h" 
+#include "parser.fwd.h"
 #include "row.h"
 #include "table.h"
+#include "utilities.h" 
 #include "vector.h"
 
 #define FOREACH_PREPARE_ENUM(GENERATOR) \
@@ -62,8 +63,6 @@ typedef struct _statement
     StatementErrorString statement_error;
     
 } statement; 
-
-void print_prompt();
 
 statement* create_statement();
 void destroy_statement(statement* statement);
