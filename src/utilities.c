@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 
+#include <readline/history.h>
 #include <readline/readline.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -49,6 +50,8 @@ void string_buffer_read(string_buffer *buffer)
 {
     char* input = readline(PRINT_PROMPT);
     ENSURE(input!=NULL, "unsuccessful `readline`");
+    
+    add_history(input);
     
     buffer->string = input;
     buffer->buffer_size = strlen(input)+1;
